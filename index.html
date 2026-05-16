@@ -485,12 +485,86 @@ button { cursor: pointer; font-family: 'DM Mono', monospace; border: none; borde
 .detail-section { display:flex; flex-direction:column; gap:.35rem; }
 .detail-label { font-size:.6rem; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; }
 
-.task-notes {
-  width:100%; min-height:70px; resize:vertical; font-size:.76rem; line-height:1.65;
-  padding:.6rem .8rem; background:var(--surface2); border:1px solid var(--border);
-  border-radius:8px; color:var(--text);
+/* ── Comment system ── */
+.comments-list { display:flex; flex-direction:column; gap:.45rem; }
+
+.comment-item {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:8px; padding:.55rem .7rem;
+  display:flex; flex-direction:column; gap:.3rem;
+  animation:slideIn .15s ease;
 }
-.task-notes:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+
+.comment-header { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+.comment-dt { font-size:.58rem; color:var(--muted); white-space:nowrap; }
+.comment-actions { display:flex; gap:.2rem; }
+
+.comment-action-btn {
+  background:none; border:none; cursor:pointer;
+  font-size:.6rem; color:var(--muted); padding:.1rem .3rem;
+  border-radius:4px; transition:all .15s; font-family:'DM Mono',monospace;
+}
+.comment-action-btn:hover { color:var(--accent2); background:var(--surface3); }
+.comment-action-btn.del:hover { color:var(--danger); }
+
+.comment-body {
+  font-size:.75rem; line-height:1.6; color:var(--text);
+  white-space:pre-wrap; word-break:break-word;
+}
+
+.comment-edit-area {
+  width:100%; font-size:.75rem; line-height:1.55;
+  padding:.4rem .6rem; background:var(--surface);
+  border:1px solid var(--accent); border-radius:6px;
+  color:var(--text); font-family:'DM Mono',monospace;
+  resize:vertical; min-height:52px; outline:none;
+}
+
+.comment-edit-row { display:flex; gap:.35rem; justify-content:flex-end; margin-top:.25rem; }
+
+.btn-comment-save {
+  font-family:'DM Mono',monospace; font-size:.65rem;
+  padding:.25rem .65rem; border-radius:6px;
+  background:var(--accent); color:#fff; border:none; cursor:pointer;
+  transition:background .15s;
+}
+.btn-comment-save:hover { background:#5a4dd4; }
+
+.btn-comment-cancel {
+  font-family:'DM Mono',monospace; font-size:.65rem;
+  padding:.25rem .65rem; border-radius:6px;
+  background:var(--surface3); color:var(--muted);
+  border:1px solid var(--border); cursor:pointer; transition:all .15s;
+}
+.btn-comment-cancel:hover { color:var(--text); }
+
+.comment-input-wrap { display:flex; flex-direction:column; gap:.4rem; }
+
+.comment-textarea {
+  width:100%; font-size:.76rem; line-height:1.6;
+  padding:.6rem .8rem; background:var(--surface2);
+  border:1px solid var(--border); border-radius:8px;
+  color:var(--text); font-family:'DM Mono',monospace;
+  resize:vertical; min-height:64px; outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+.comment-textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+.comment-textarea::placeholder { color:var(--muted); }
+
+.comment-post-row { display:flex; justify-content:flex-end; }
+
+.btn-post {
+  font-family:'DM Mono',monospace; font-size:.72rem; font-weight:500;
+  padding:.4rem .9rem; border-radius:7px;
+  background:var(--accent); color:#fff; border:none; cursor:pointer;
+  transition:background .15s, transform .1s;
+  display:flex; align-items:center; gap:.4rem;
+  box-shadow:0 2px 10px rgba(111,94,249,.3);
+}
+.btn-post:hover { background:#5a4dd4; transform:translateY(-1px); }
+.btn-post:active { transform:translateY(0); }
+
+.no-comments { font-size:.7rem; color:var(--muted); text-align:center; padding:.5rem; font-style:italic; }
 
 /* Attachments */
 .attach-grid { display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:.5rem; }
@@ -1415,8 +1489,73 @@ function toggleExpand(gid, tid) {
   t.expanded = !t.expanded; save();
 }
 
-function saveNotes(gid, tid, val) {
-  data.find(g=>g.id===gid).tasks.find(t=>t.id===tid).notes = val; save();
+// ── Comments ──────────────────────────────────────────
+function formatDT() {
+  const now = new Date();
+  return now.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })
+    + ' · '
+    + now.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+}
+
+function postComment(gid, tid) {
+  const ta   = document.getElementById('ct-' + tid);
+  const text = ta.value.trim();
+  if (!text) return;
+
+  const t = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
+  if (!t.comments) t.comments = [];
+
+  t.comments.push({ id: uid(), text, dt: formatDT() });
+  ta.value = '';
+  save();
+}
+
+function deleteComment(gid, tid, cid) {
+  const t = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
+  t.comments = (t.comments||[]).filter(c=>c.id!==cid);
+  save();
+}
+
+function editComment(gid, tid, cid) {
+  const t = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
+  const c = (t.comments||[]).find(c=>c.id===cid);
+  if (!c) return;
+
+  const item = document.getElementById('ci-' + cid);
+  if (!item) return;
+
+  // Replace body with edit textarea inline
+  item.innerHTML = `
+    <div class="comment-header">
+      <span class="comment-dt">${esc(c.dt)}</span>
+    </div>
+    <textarea class="comment-edit-area" id="ea-${cid}">${esc(c.text)}</textarea>
+    <div class="comment-edit-row">
+      <button class="btn-comment-cancel" onclick="cancelEdit('${gid}','${tid}','${cid}')">Cancel</button>
+      <button class="btn-comment-save" onclick="saveEdit('${gid}','${tid}','${cid}')">Save</button>
+    </div>`;
+
+  const ea = document.getElementById('ea-' + cid);
+  if (ea) { ea.focus(); ea.setSelectionRange(ea.value.length, ea.value.length); }
+}
+
+function saveEdit(gid, tid, cid) {
+  const ea   = document.getElementById('ea-' + cid);
+  const text = ea ? ea.value.trim() : '';
+  if (!text) return;
+
+  const t = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
+  const c = (t.comments||[]).find(c=>c.id===cid);
+  if (c) {
+    c.text = text;
+    c.dt   = c.dt + ' (edited)';
+  }
+  save();
+}
+
+function cancelEdit(gid, tid, cid) {
+  // Just re-render to restore original
+  save();
 }
 
 // ── Status ────────────────────────────────────────────
@@ -1570,9 +1709,32 @@ function render() {
             </div>
             <div class="task-detail">
               <div class="detail-section">
-                <div class="detail-label">📝 &nbsp;Notes</div>
-                <textarea class="task-notes" placeholder="Add notes, links, context…"
-                  oninput="saveNotes('${g.id}','${t.id}',this.value)">${esc(t.notes||'')}</textarea>
+                <div class="detail-label">💬 &nbsp;Comments</div>
+                <div class="comments-list" id="cl-${t.id}">
+                  ${(t.comments||[]).length === 0
+                    ? `<div class="no-comments">No comments yet</div>`
+                    : (t.comments||[]).map(c => `
+                      <div class="comment-item" id="ci-${c.id}">
+                        <div class="comment-header">
+                          <span class="comment-dt">${esc(c.dt)}</span>
+                          <div class="comment-actions">
+                            <button class="comment-action-btn" onclick="editComment('${g.id}','${t.id}','${c.id}')">✏️ edit</button>
+                            <button class="comment-action-btn del" onclick="deleteComment('${g.id}','${t.id}','${c.id}')">✕</button>
+                          </div>
+                        </div>
+                        <div class="comment-body" id="cb-${c.id}">${esc(c.text)}</div>
+                      </div>`).join('')
+                  }
+                </div>
+                <div class="comment-input-wrap">
+                  <textarea class="comment-textarea" id="ct-${t.id}" placeholder="Write a comment…" rows="2"></textarea>
+                  <div class="comment-post-row">
+                    <button class="btn-post" onclick="postComment('${g.id}','${t.id}')">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                      Post
+                    </button>
+                  </div>
+                </div>
               </div>
               <div class="detail-section">
                 <div class="detail-label">📎 &nbsp;Attachments <span style="font-size:.58rem;text-transform:none;letter-spacing:0;color:var(--muted)">(click to preview)</span></div>
@@ -1625,7 +1787,11 @@ window.toggleGroup       = toggleGroup;
 window.addTask           = addTask;
 window.deleteTask        = deleteTask;
 window.toggleExpand      = toggleExpand;
-window.saveNotes         = saveNotes;
+window.postComment       = postComment;
+window.deleteComment     = deleteComment;
+window.editComment       = editComment;
+window.saveEdit          = saveEdit;
+window.cancelEdit        = cancelEdit;
 window.setStatus         = setStatus;
 window.openStatusDropdown= openStatusDropdown;
 window.triggerAttach     = triggerAttach;
