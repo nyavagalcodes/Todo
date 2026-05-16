@@ -64,6 +64,8 @@ body::before {
 .pin-logo {
   font-family: 'Syne', sans-serif; font-size: 1.7rem; font-weight: 800;
   letter-spacing: -.04em; text-align: center;
+  display: flex; align-items: baseline; gap: .3rem; justify-content: center;
+  flex-wrap: nowrap; white-space: nowrap;
 }
 .pin-logo .w1 { color: #fff; }
 .pin-logo .w2 { color: var(--accent2); font-weight: 400; }
@@ -187,37 +189,44 @@ body::before {
 #appScreen.show { display: block; }
 
 /* Header */
-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+header { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; margin-bottom: 2rem; }
 
-.wordmark-sm { font-family: 'Syne', sans-serif; font-size: 1.7rem; font-weight: 800; letter-spacing: -.04em; }
+.wordmark-sm { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; letter-spacing: -.04em; white-space: nowrap; }
 .wordmark-sm .w1 { color: #fff; }
 .wordmark-sm .w2 { color: var(--accent2); font-weight: 400; }
-.header-sub { font-size: .65rem; color: var(--muted); margin-top: .2rem; }
+.header-sub { font-size: .58rem; color: var(--muted); margin-top: .15rem; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: .45rem; }
-.stats { font-size: .67rem; color: var(--muted); text-align: right; line-height: 1.9; }
-.stats strong { color: var(--accent2); }
+.header-right {
+  display: flex; flex-direction: column; align-items: flex-end; gap: .4rem;
+  flex-shrink: 0;
+}
+
+.header-controls {
+  display: flex; align-items: center; gap: .3rem; white-space: nowrap;
+}
 
 .sync-pill {
-  display: flex; align-items: center; gap: .45rem; padding: .3rem .75rem;
+  display: flex; align-items: center; gap: .3rem; padding: .25rem .5rem;
   border-radius: 999px; border: 1px solid var(--border); background: var(--surface2);
-  font-size: .65rem; color: var(--muted); transition: border-color .2s;
+  font-size: .58rem; color: var(--muted); transition: border-color .2s; white-space: nowrap; flex-shrink: 0;
 }
 .sync-pill.ok     { border-color: rgba(52,211,153,.35); color: var(--text); }
 .sync-pill.saving { border-color: rgba(111,94,249,.4); }
 .sync-pill.error  { border-color: rgba(248,113,113,.35); color: #f87171; }
-.s-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background .2s; }
+.s-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background .2s; }
 .sync-pill.ok     .s-dot { background: var(--done); }
 .sync-pill.saving .s-dot { background: var(--accent); animation: blink .5s infinite; }
 .sync-pill.error  .s-dot { background: #f87171; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
 
 .btn-signout {
-  font-family: 'DM Mono', monospace; font-size: .62rem; padding: .2rem .55rem;
+  font-family: 'DM Mono', monospace; font-size: .58rem; padding: .18rem .4rem;
   border-radius: 5px; background: transparent; border: 1px solid var(--border);
-  color: var(--muted); cursor: pointer; transition: all .15s;
+  color: var(--muted); cursor: pointer; transition: all .15s; white-space: nowrap; flex-shrink: 0;
 }
 .btn-signout:hover { border-color: #f87171; color: #f87171; }
+
+.stats { font-size: .63rem; color: var(--muted); text-align: right; line-height: 1.9; }
+.stats strong { color: var(--accent2); }
 
 /* Add group bar — original style, two rows */
 .add-group-bar { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1.5rem; }
@@ -240,13 +249,20 @@ header { display: flex; align-items: flex-start; justify-content: space-between;
 /* Groups */
 .groups { display: flex; flex-direction: column; gap: .75rem; }
 
-/* Task group = default purple accent */
+/* Task group = thick purple left wall */
 .group {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 13px; animation: slideIn .2s ease;
+  background: var(--surface);
+  border: 1px solid rgba(111,94,249,.2);
+  border-left: 6px solid #6f5ef9;
+  border-radius: 13px;
+  animation: slideIn .2s ease;
 }
-/* Document group = teal accent */
-.group.doc-group { border-color: rgba(34,211,238,.2); }
+/* Document group = thick teal left wall */
+.group.doc-group {
+  border: 1px solid rgba(34,211,238,.2);
+  border-left: 6px solid #22d3ee;
+}
+.group-header:hover { background: rgba(111,94,249,.04); }
 .group.doc-group .group-header:hover { background: rgba(34,211,238,.04); }
 
 @keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
@@ -306,8 +322,10 @@ header { display: flex; align-items: flex-start; justify-content: space-between;
 .status-btn[data-status="done"]                  { background: rgba(52,211,153,.1);  color: var(--done); }
 .status-btn[data-status="done"]     .status-dot { background: var(--done); }
 
-.task .btn-icon { opacity: 0; }
+.task .btn-icon { opacity: 0.45; }
 .task:hover .btn-icon, .task-wrap.expanded .task .btn-icon { opacity: 1; }
+/* On touch devices always show buttons fully */
+@media (hover: none) { .task .btn-icon { opacity: 1; } }
 
 /* Status portal */
 #statusPortal {
@@ -372,8 +390,12 @@ header { display: flex; align-items: flex-start; justify-content: space-between;
 
 /* Comment input area */
 .comment-input-wrap { display: flex; flex-direction: column; gap: .4rem; }
+
+.comment-textarea-wrap { position: relative; }
+
 .comment-textarea {
   width: 100%; font-size: .76rem; line-height: 1.6; padding: .6rem .8rem;
+  padding-right: 2.4rem;
   background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
   color: var(--text); font-family: 'DM Mono', monospace; resize: vertical; min-height: 64px; outline: none;
   transition: border-color .2s;
@@ -381,15 +403,19 @@ header { display: flex; align-items: flex-start; justify-content: space-between;
 .comment-textarea:focus { border-color: var(--accent); }
 .comment-textarea::placeholder { color: var(--muted); }
 
-.comment-post-row { display: flex; align-items: center; justify-content: space-between; }
-
-.btn-attach-comment {
-  display: flex; align-items: center; gap: .3rem; font-family: 'DM Mono', monospace;
-  font-size: .68rem; padding: .35rem .7rem; border-radius: 7px;
+/* Attach icon sits inside the textarea top-right */
+.btn-attach-inside {
+  position: absolute; top: .45rem; right: .45rem;
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
   background: var(--surface3); border: 1px solid var(--border);
-  color: var(--muted); cursor: pointer; transition: all .15s;
+  border-radius: 6px; cursor: pointer; font-size: .85rem;
+  transition: border-color .15s, background .15s;
+  line-height: 1;
 }
-.btn-attach-comment:hover { border-color: var(--accent2); color: var(--accent2); }
+.btn-attach-inside:hover { border-color: var(--accent2); background: var(--accent-glow); }
+
+.comment-post-row { display: flex; align-items: center; justify-content: flex-end; }
 
 .btn-post {
   display: flex; align-items: center; gap: .4rem; font-family: 'DM Mono', monospace;
@@ -627,7 +653,7 @@ input[type="file"] { display: none; }
       <div class="header-sub" id="repoLabel"></div>
     </div>
     <div class="header-right">
-      <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;justify-content:flex-end">
+      <div class="header-controls">
         <div class="sync-pill" id="syncPill"><span class="s-dot"></span><span id="syncLabel">Connecting…</span></div>
         <button class="btn-signout" onclick="signOut()">disconnect</button>
       </div>
@@ -668,19 +694,8 @@ input[type="file"] { display: none; }
      CONFIG — edit this to change PIN
      Hash tool: https://emn178.github.io/online-tools/sha256.html
 ════════════════════════════════════════ -->
-<script>
-window.APP_CONFIG = {
-  PIN_LENGTH: 5,
-  users: [
-    {
-      username: 'Admin',
-      pinHash: '92b4023c5fce4cce0b3781d8cc24350d640a51b797eef7b3140001d654238085',
-    },
-  ],
-  MAX_ATTEMPTS:    5,
-  LOCKOUT_MINUTES: 5,
-};
-</script>
+<!-- Config loaded from config.js — edit that file to change PIN/username -->
+<script src="config.js"></script>
 
 <script>
 'use strict';
@@ -769,7 +784,7 @@ function buildUserSelector() {
 
   if (users.length === 1) {
     selectedUser = users[0];
-    document.getElementById('pinLogoSub').textContent = `Hello ${selectedUser.username} — enter your PIN`;
+    document.getElementById('pinLogoSub').textContent = `${selectedUser.username} · enter your PIN`;
     return;
   }
   document.getElementById('userSelector').style.display = 'block';
@@ -792,7 +807,7 @@ function selectUser(index) {
   pinEntry = '';
   updatePinDots();
   clearPinError();
-  document.getElementById('pinLogoSub').textContent = `Hello ${selectedUser.username} — enter your PIN`;
+  document.getElementById('pinLogoSub').textContent = `${selectedUser.username} · enter your PIN`;
 }
 
 function pinPress(digit) {
@@ -1425,10 +1440,12 @@ function render() {
                 <div class="detail-label">💬 Comments</div>
                 <div class="comments-list" id="cl-${t.id}">${commentsHtml}</div>
                 <div class="comment-input-wrap">
-                  <textarea class="comment-textarea" id="ct-${t.id}" placeholder="Write a comment…" rows="2"></textarea>
+                  <div class="comment-textarea-wrap">
+                    <textarea class="comment-textarea" id="ct-${t.id}" placeholder="Write a comment…" rows="2"></textarea>
+                    <button class="btn-attach-inside" onclick="triggerCommentAttach('${t.id}')" title="Attach file">📎</button>
+                  </div>
                   <div id="cap-${t.id}" class="comment-att-preview"></div>
                   <div class="comment-post-row">
-                    <button class="btn-attach-comment" onclick="triggerCommentAttach('${t.id}')">📎 Attach</button>
                     <button class="btn-post" onclick="postComment('${g.id}','${t.id}')">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                       Post
