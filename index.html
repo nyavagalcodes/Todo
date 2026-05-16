@@ -1227,7 +1227,6 @@ function addGroup() {
   const name = inp.value.trim(); if (!name) return;
   const isDocBtn = document.getElementById('catDoc');
   const cat = (isDocBtn && (isDocBtn.classList.contains('active-doc'))) ? 'document' : 'task';
-  alert('DEBUG: category = ' + cat + ' | catDoc classes = ' + isDocBtn.className);
   data.push({ id:uid(), name, category:cat, open:true, tasks:[] });
   inp.value = ''; save();
 }
@@ -1324,6 +1323,21 @@ function cancelEdit(gid,tid,cid) { save(); }
 
 // ── Attachments ───────────────────────────────────────
 function triggerAttach(gid,tid) { pendingUpload={gid,tid}; fileInput.value=''; fileInput.click(); }
+
+function triggerAttachNew(gid) {
+  // Create the item first (using input name or a default), then attach
+  const inp  = document.getElementById('task-input-' + gid);
+  const name = inp.value.trim() || 'Document';
+  const g    = data.find(g=>g.id===gid);
+  const newTask = { id:uid(), name, status:'todo', expanded:false, attachments:[], comments:[] };
+  g.tasks.push(newTask);
+  inp.value = '';
+  save();
+  // Open attach for the new item
+  pendingUpload = { gid, tid: newTask.id };
+  fileInput.value = '';
+  fileInput.click();
+}
 
 async function handleFileUpload() {
   if (!pendingUpload) return;
@@ -1505,8 +1519,9 @@ function render() {
       <div class="group-body">
         <div class="tasks">${tasksHtml}</div>
         <div class="add-task-row">
-          <input type="text" id="task-input-${g.id}" placeholder="Add ${isDoc?'document':'task'}…" maxlength="120"
+          <input type="text" id="task-input-${g.id}" placeholder="Add ${isDoc?'document name':'task'}…" maxlength="120"
             onkeydown="if(event.key==='Enter') addTask('${g.id}')">
+          ${isDoc ? `<button class="btn-icon neutral" style="opacity:1;font-size:1rem;width:36px;height:36px;flex-shrink:0" onclick="triggerAttachNew('${g.id}')" title="Attach file">📎</button>` : ''}
           <button class="btn-sm" onclick="addTask('${g.id}')">Add</button>
         </div>
       </div>
@@ -1536,6 +1551,7 @@ window.removeCommentAtt   = removeCommentAtt;
 window.setStatus          = setStatus;
 window.openStatusDropdown = openStatusDropdown;
 window.triggerAttach      = triggerAttach;
+window.triggerAttachNew   = triggerAttachNew;
 window.deleteAttachment   = deleteAttachment;
 window.openViewer         = openViewer;
 window.closeViewer        = closeViewer;
