@@ -1,69 +1,1601 @@
-// ═══════════════════════════════════════════════════════
-//  TaskFlow — App Configuration
-//  Upload this file to your GitHub repo (taskflow)
-//  alongside index.html
-//
-//  ⚠️  Keep this file in your PUBLIC repo carefully.
-//      PINs are stored as SHA-256 hashes — not plain text.
-//      Never store plain PINs here.
-// ═══════════════════════════════════════════════════════
-//
-//  HOW TO GET A PIN HASH:
-//  1. Go to https://emn178.github.io/online-tools/sha256.html
-//  2. Type the 6-digit PIN in the input box
-//  3. Copy the hash string it generates
-//  4. Paste it as the pinHash value below
-//
-//  HOW TO ADD A NEW USER:
-//  1. Copy one of the user blocks below
-//  2. Set a unique username
-//  3. Generate a PIN hash using the steps above
-//  4. Paste the new block into the users array
-//  5. Commit config.js to GitHub — done!
-//
-//  HOW TO REMOVE A USER:
-//  Simply delete their block from the users array
-//
-// ═══════════════════════════════════════════════════════
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaskFlow</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-const APP_CONFIG = {
+:root {
+  --bg: #080910;
+  --surface: #11121a;
+  --surface2: #191b26;
+  --surface3: #1f2130;
+  --border: #272a3d;
+  --accent: #6f5ef9;
+  --accent2: #a78bfa;
+  --accent-glow: rgba(111,94,249,0.15);
+  --started: #f59e42;
+  --progress: #22d3ee;
+  --done: #34d399;
+  --text: #e2e4f0;
+  --muted: #5a5d7a;
+  --danger: #f87171;
+  --success: #34d399;
+}
 
-  // ── Users ────────────────────────────────────────────
-  // Each user has a username and a SHA-256 hashed PIN.
-  // Username is shown on the login screen.
-  // Add as many users as you need.
+body {
+  font-family: 'DM Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 0;
+}
 
-  users: [
-    {
-      username: 'Navaneet',          // Display name shown on login screen
-      pinHash:  '4994625184a72ac4993713609c93308a12166a2edd17eadecd355f545ece3ebc',
-                                  // ↑ SHA-256 hash of your PIN (not the PIN itself)
+/* ── PIN screen ── */
+#pinScreen {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg); padding: 1.5rem;
+}
+
+#pinScreen.hidden { display: none; }
+
+.pin-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  width: 100%; max-width: 320px;
+  display: flex; flex-direction: column; align-items: center; gap: 1.75rem;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(111,94,249,0.08);
+  animation: fadeUp .35s ease;
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.pin-logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.7rem; font-weight: 800; letter-spacing: -.04em;
+  background: linear-gradient(135deg, #fff 20%, var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  text-align: center;
+}
+
+.pin-logo-sub { font-size: .65rem; color: var(--muted); text-align: center; margin-top: .2rem; }
+
+.pin-label {
+  font-size: .72rem; color: var(--muted); text-align: center; line-height: 1.6;
+}
+
+/* PIN dot indicators */
+.pin-dots {
+  display: flex; gap: .65rem; align-items: center; justify-content: center;
+}
+
+.pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--border);
+  background: transparent;
+  transition: background .15s, border-color .15s, transform .15s;
+}
+
+.pin-dot.filled {
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: scale(1.15);
+}
+
+.pin-dot.error {
+  background: var(--danger);
+  border-color: var(--danger);
+  animation: shake .35s ease;
+}
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-5px); }
+  40%     { transform: translateX(5px); }
+  60%     { transform: translateX(-5px); }
+  80%     { transform: translateX(3px); }
+}
+
+/* PIN numpad */
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .55rem;
+  width: 100%;
+}
+
+.pin-btn {
+  aspect-ratio: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-family: 'Syne', sans-serif;
+  font-size: 1.25rem; font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .1s, transform .1s, border-color .1s;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pin-btn:active, .pin-btn:hover { background: var(--surface3); border-color: var(--accent); transform: scale(.94); }
+
+.pin-btn.del { font-size: 1rem; color: var(--muted); }
+.pin-btn.del:hover { color: var(--danger); border-color: var(--danger); }
+.pin-btn.empty { background: transparent; border-color: transparent; cursor: default; pointer-events: none; }
+
+.pin-error-msg {
+  font-size: .7rem; color: var(--danger); text-align: center;
+  min-height: 1rem; transition: opacity .2s;
+}
+
+.pin-attempts {
+  font-size: .62rem; color: var(--muted); text-align: center;
+}
+
+/* User selector button */
+.user-btn {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .55rem .85rem; border-radius: 9px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-family: 'DM Mono', monospace;
+  font-size: .78rem; cursor: pointer; transition: all .15s;
+  width: 100%; text-align: left;
+}
+.user-btn:hover  { border-color: var(--accent); background: var(--surface3); }
+.user-btn.active { border-color: var(--accent); background: var(--accent-glow); color: var(--accent2); }
+.user-btn .u-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem; font-weight: 700; flex-shrink: 0;
+  font-family: 'Syne', sans-serif;
+}
+
+/* Ambient background */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 40% at 70% 0%, rgba(111,94,249,0.07) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 10% 90%, rgba(34,211,238,0.04) 0%, transparent 60%);
+}
+
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(111,94,249,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(111,94,249,0.025) 1px, transparent 1px);
+  background-size: 36px 36px;
+}
+
+/* ── Setup screen ── */
+#setupScreen {
+  position: relative; z-index: 10;
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1.5rem;
+}
+
+.setup-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  width: 100%; max-width: 420px;
+  display: flex; flex-direction: column; gap: 1.75rem;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(111,94,249,0.08);
+  animation: fadeUp .4s ease;
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.setup-logo {
+  display: flex; flex-direction: column; gap: .3rem;
+}
+
+.setup-logo .wordmark {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.9rem; font-weight: 800; letter-spacing: -.04em;
+  background: linear-gradient(135deg, #fff 20%, var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+.setup-logo .tagline {
+  font-size: .68rem; color: var(--muted); letter-spacing: .04em;
+}
+
+.setup-divider {
+  height: 1px; background: var(--border);
+}
+
+.setup-steps {
+  display: flex; flex-direction: column; gap: .55rem;
+}
+
+.setup-step {
+  display: flex; gap: .7rem; align-items: flex-start;
+  background: var(--surface2); border-radius: 9px;
+  padding: .6rem .8rem; font-size: .72rem; line-height: 1.65; color: var(--text);
+}
+
+.setup-step .sn {
+  font-family: 'Syne', sans-serif; font-weight: 700;
+  color: var(--accent2); flex-shrink: 0; font-size: .8rem; min-width: 14px;
+}
+
+.setup-step a { color: var(--accent2); text-decoration: none; }
+.setup-step a:hover { text-decoration: underline; }
+.setup-step code {
+  background: var(--surface3); padding: .1rem .35rem; border-radius: 4px;
+  font-size: .68rem; color: var(--text);
+}
+
+.field-group { display: flex; flex-direction: column; gap: .75rem; }
+
+.field { display: flex; flex-direction: column; gap: .3rem; }
+
+.field label {
+  font-size: .63rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .1em;
+}
+
+.field input {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-family: 'DM Mono', monospace;
+  font-size: .75rem; padding: .65rem .9rem; border-radius: 9px;
+  outline: none; width: 100%;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.field input::placeholder { color: var(--muted); }
+
+.field .hint {
+  font-size: .63rem; color: var(--muted); line-height: 1.5;
+}
+
+.field .hint a { color: var(--accent2); text-decoration: none; }
+
+.btn-connect {
+  display: flex; align-items: center; justify-content: center; gap: .6rem;
+  padding: .8rem 1.5rem; border-radius: 10px;
+  background: var(--accent); color: #fff;
+  font-family: 'DM Mono', monospace; font-size: .82rem; font-weight: 500;
+  border: none; cursor: pointer;
+  transition: background .15s, transform .1s, box-shadow .15s;
+  box-shadow: 0 4px 20px rgba(111,94,249,.35);
+}
+
+.btn-connect:hover { background: #5a4dd4; transform: translateY(-1px); box-shadow: 0 6px 28px rgba(111,94,249,.45); }
+.btn-connect:active { transform: translateY(0); }
+.btn-connect:disabled { background: var(--surface3); color: var(--muted); cursor: not-allowed; box-shadow: none; transform: none; }
+
+.setup-error {
+  background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.3);
+  border-radius: 8px; padding: .6rem .85rem;
+  font-size: .72rem; color: var(--danger); line-height: 1.6;
+  display: none;
+}
+
+.setup-error.show { display: block; }
+
+/* ── Main app ── */
+#appScreen {
+  display: none;
+  position: relative; z-index: 10;
+  max-width: 780px; margin: 0 auto;
+  padding: 2rem 1rem 5rem;
+}
+
+#appScreen.show { display: block; }
+
+/* Header */
+header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 1rem;
+  margin-bottom: 2rem; flex-wrap: wrap;
+}
+
+.wordmark-sm {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.7rem; font-weight: 800; letter-spacing: -.04em;
+  background: linear-gradient(135deg, #fff 20%, var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+.wordmark-sm span { font-weight: 400; opacity: .45; }
+
+.header-sub { font-size: .65rem; color: var(--muted); margin-top: .2rem; }
+
+.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: .45rem; }
+
+/* Sync pill */
+.sync-pill {
+  display: flex; align-items: center; gap: .45rem;
+  padding: .3rem .75rem; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface2);
+  font-size: .65rem; color: var(--muted); transition: border-color .2s;
+}
+
+.sync-pill.ok     { border-color: rgba(52,211,153,.35); color: var(--text); }
+.sync-pill.saving { border-color: rgba(111,94,249,.4); }
+.sync-pill.error  { border-color: rgba(248,113,113,.35); color: var(--danger); }
+
+.s-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  background: var(--muted); transition: background .2s;
+}
+
+.sync-pill.ok     .s-dot { background: var(--done); }
+.sync-pill.saving .s-dot { background: var(--accent); animation: blink .5s infinite; }
+.sync-pill.error  .s-dot { background: var(--danger); }
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+.stats { font-size: .67rem; color: var(--muted); text-align: right; line-height: 1.9; }
+.stats strong { color: var(--accent2); }
+
+.btn-signout {
+  font-family: 'DM Mono', monospace; font-size: .62rem;
+  padding: .2rem .55rem; border-radius: 5px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer; transition: all .15s;
+}
+
+.btn-signout:hover { border-color: var(--danger); color: var(--danger); }
+
+/* Add group */
+.add-group-bar { display: flex; gap: .5rem; margin-bottom: 1.5rem; }
+
+input[type="text"], textarea {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); font-family: 'DM Mono', monospace;
+  font-size: .8rem; padding: .65rem 1rem; border-radius: 9px;
+  outline: none; transition: border-color .2s, box-shadow .2s;
+}
+
+input[type="text"] { flex: 1; }
+input[type="text"]:focus, textarea:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow);
+}
+input[type="text"]::placeholder, textarea::placeholder { color: var(--muted); }
+
+button { cursor: pointer; font-family: 'DM Mono', monospace; border: none; border-radius: 9px; transition: all .15s; }
+
+.btn-primary {
+  background: var(--accent); color: #fff;
+  font-size: .8rem; font-weight: 500;
+  padding: .65rem 1.2rem; white-space: nowrap;
+  box-shadow: 0 2px 12px rgba(111,94,249,.3);
+}
+
+.btn-primary:hover { background: #5a4dd4; transform: translateY(-1px); }
+
+/* Groups */
+.groups { display: flex; flex-direction: column; gap: .75rem; }
+
+.group {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 13px; animation: slideIn .2s ease;
+}
+
+@keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+
+.group-header {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .9rem 1rem; cursor: pointer; user-select: none;
+  transition: background .15s; border-radius: 13px;
+}
+
+.group.open .group-header { border-radius: 13px 13px 0 0; }
+.group-header:hover { background: var(--surface2); }
+
+.chevron { width:18px; height:18px; color:var(--muted); transition:transform .2s; flex-shrink:0; }
+.group.open .chevron { transform:rotate(90deg); }
+
+.group-name { font-family:'Syne',sans-serif; font-weight:600; font-size:.95rem; flex:1; }
+
+.group-meta { font-size:.65rem; color:var(--muted); display:flex; gap:.45rem; align-items:center; }
+.pill { padding:.12rem .5rem; border-radius:999px; font-size:.62rem; }
+.pill-done  { background:rgba(52,211,153,.1); color:var(--done); }
+.pill-total { background:var(--surface3); color:var(--muted); }
+
+.btn-icon {
+  width:28px; height:28px; display:flex; align-items:center; justify-content:center;
+  background:transparent; color:var(--muted); border-radius:7px; font-size:.82rem; flex-shrink:0;
+}
+.btn-icon:hover { background:var(--surface3); color:var(--danger); }
+.btn-icon.neutral:hover { color:var(--accent2); }
+
+.group-body { display:none; border-top:1px solid var(--border); border-radius:0 0 13px 13px; overflow:hidden; }
+.group.open .group-body { display:block; }
+
+.group-progress { height:2px; background:var(--border); }
+.group-progress-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--done)); transition:width .4s ease; }
+
+/* Tasks */
+.tasks { padding:.5rem; display:flex; flex-direction:column; gap:.3rem; }
+
+.task-wrap { border-radius:9px; border:1px solid transparent; transition:border-color .15s; overflow:hidden; }
+.task-wrap:hover { border-color:var(--border); }
+.task-wrap.expanded { border-color:var(--accent)!important; }
+
+.task { display:flex; align-items:center; gap:.55rem; padding:.6rem .75rem; background:var(--surface2); }
+.task-name { flex:1; font-size:.8rem; line-height:1.4; }
+.task-wrap.done .task-name { text-decoration:line-through; color:var(--muted); }
+.attach-badge { font-size:.62rem; color:var(--muted); white-space:nowrap; }
+
+.status-btn {
+  display:flex; align-items:center; gap:.3rem; padding:.22rem .55rem; border-radius:6px;
+  font-size:.62rem; font-weight:500; background:var(--surface3); color:var(--muted); white-space:nowrap;
+}
+.status-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.status-btn[data-status="todo"]     .status-dot { background:var(--muted); }
+.status-btn[data-status="started"]               { background:rgba(245,158,66,.12); color:var(--started); }
+.status-btn[data-status="started"]  .status-dot { background:var(--started); }
+.status-btn[data-status="progress"]              { background:rgba(34,211,238,.1);  color:var(--progress); }
+.status-btn[data-status="progress"] .status-dot { background:var(--progress); }
+.status-btn[data-status="done"]                  { background:rgba(52,211,153,.1);  color:var(--done); }
+.status-btn[data-status="done"]     .status-dot { background:var(--done); }
+
+.task .btn-icon { opacity:0; }
+.task:hover .btn-icon, .task-wrap.expanded .task .btn-icon { opacity:1; }
+
+/* Status portal */
+#statusPortal {
+  position:fixed; background:var(--surface3); border:1px solid var(--border);
+  border-radius:9px; overflow:hidden; z-index:9999; min-width:145px;
+  box-shadow:0 12px 32px rgba(0,0,0,.55); display:none;
+}
+#statusPortal.open { display:block; }
+
+.status-option {
+  display:flex; align-items:center; gap:.5rem; padding:.5rem .75rem;
+  font-size:.7rem; cursor:pointer; transition:background .1s;
+  color:var(--text); background:transparent; width:100%; text-align:left; border-radius:0;
+}
+.status-option:hover { background:var(--surface2); }
+.status-option .dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+
+/* Task detail */
+.task-detail {
+  display:none; background:var(--surface3); border-top:1px solid var(--border);
+  padding:.9rem; flex-direction:column; gap:1rem;
+}
+.task-wrap.expanded .task-detail { display:flex; }
+
+.detail-section { display:flex; flex-direction:column; gap:.35rem; }
+.detail-label { font-size:.6rem; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; }
+
+.task-notes {
+  width:100%; min-height:70px; resize:vertical; font-size:.76rem; line-height:1.65;
+  padding:.6rem .8rem; background:var(--surface2); border:1px solid var(--border);
+  border-radius:8px; color:var(--text);
+}
+.task-notes:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+
+/* Attachments */
+.attach-grid { display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:.5rem; }
+
+.attach-img {
+  position:relative; width:76px; height:76px; border-radius:8px; overflow:hidden;
+  border:1px solid var(--border); flex-shrink:0; cursor:pointer;
+}
+.attach-img img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .2s; }
+.attach-img:hover img { transform:scale(1.06); }
+.attach-img .img-overlay {
+  position:absolute; inset:0; background:rgba(0,0,0,0);
+  display:flex; align-items:center; justify-content:center;
+  transition:background .2s; font-size:1.1rem; opacity:0; transition:all .2s;
+}
+.attach-img:hover .img-overlay { background:rgba(0,0,0,.45); opacity:1; }
+.attach-img .del-btn {
+  position:absolute; top:3px; right:3px; width:18px; height:18px;
+  background:rgba(0,0,0,.75); border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:.56rem; color:#fff; cursor:pointer;
+  opacity:0; transition:opacity .15s; border:none; padding:0; z-index:2;
+}
+.attach-img:hover .del-btn { opacity:1; }
+
+.attach-file {
+  display:flex; align-items:center; gap:.4rem;
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:8px; padding:.35rem .65rem; font-size:.66rem; max-width:210px;
+  cursor:pointer; transition:border-color .15s;
+}
+.attach-file:hover { border-color:var(--accent); }
+.attach-file .file-icon { font-size:.95rem; flex-shrink:0; }
+.attach-file .file-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); }
+.attach-file:hover .file-name { color:var(--accent2); }
+.attach-file .del-btn { background:none; border:none; color:var(--muted); cursor:pointer; font-size:.68rem; padding:0; flex-shrink:0; }
+.attach-file .del-btn:hover { color:var(--danger); }
+
+/* Uploading indicator */
+.attach-uploading {
+  display:flex; align-items:center; gap:.4rem;
+  background:var(--surface2); border:1px dashed var(--accent);
+  border-radius:8px; padding:.35rem .65rem; font-size:.66rem; color:var(--muted);
+}
+
+.attach-drop {
+  display:flex; align-items:center; gap:.6rem;
+  border:1.5px dashed var(--border); border-radius:9px;
+  padding:.6rem .9rem; cursor:pointer;
+  transition:border-color .15s, background .15s; font-size:.7rem; color:var(--muted);
+}
+.attach-drop:hover { border-color:var(--accent); color:var(--accent2); background:var(--accent-glow); }
+
+/* Viewer */
+.viewer-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.93); z-index:10000;
+  display:none; align-items:center; justify-content:center; padding:1rem;
+}
+.viewer-overlay.show { display:flex; }
+
+.viewer-close {
+  position:fixed; top:1rem; right:1rem; width:38px; height:38px;
+  background:var(--surface3); border:1px solid var(--border); border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:1rem; color:var(--text); z-index:10001;
+  transition:background .15s; font-family:monospace;
+}
+.viewer-close:hover { background:var(--danger); border-color:var(--danger); }
+
+.viewer-inner { display:flex; flex-direction:column; align-items:center; gap:.75rem; max-width:90vw; }
+.viewer-inner img { max-width:88vw; max-height:82vh; border-radius:8px; object-fit:contain; box-shadow:0 0 60px rgba(0,0,0,.7); }
+.viewer-inner iframe { width:82vw; height:82vh; border:none; border-radius:8px; background:#fff; }
+
+.viewer-toolbar {
+  display:flex; align-items:center; gap:.6rem;
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:999px; padding:.35rem .75rem;
+}
+.viewer-name { font-size:.7rem; color:var(--muted); max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.btn-newtab {
+  display:flex; align-items:center; gap:.35rem;
+  padding:.28rem .65rem; background:var(--surface3); border:1px solid var(--border);
+  border-radius:6px; font-size:.65rem; color:var(--text);
+  font-family:'DM Mono',monospace; cursor:pointer; transition:border-color .15s;
+}
+.btn-newtab:hover { border-color:var(--accent); color:var(--accent2); }
+
+.no-preview {
+  background:var(--surface2); border-radius:12px;
+  padding:2.5rem 2rem; text-align:center;
+  display:flex; flex-direction:column; gap:.85rem; align-items:center;
+}
+.no-preview .big-icon { font-size:2.8rem; }
+.no-preview .np-name { font-size:.8rem; color:var(--text); max-width:280px; overflow:hidden; text-overflow:ellipsis; }
+.no-preview .np-hint { font-size:.7rem; color:var(--muted); }
+
+/* Add task row */
+.add-task-row { display:flex; gap:.4rem; padding:.5rem; border-top:1px solid var(--border); }
+.add-task-row input { font-size:.76rem; }
+.btn-sm { background:var(--accent); color:#fff; font-size:.73rem; padding:.5rem .85rem; box-shadow:0 2px 10px rgba(111,94,249,.25); }
+.btn-sm:hover { background:#5a4dd4; }
+
+.empty-tasks { text-align:center; padding:1.2rem; font-size:.72rem; color:var(--muted); }
+.empty-state { text-align:center; padding:3rem 1rem; color:var(--muted); font-size:.78rem; line-height:2.2; }
+.empty-state .big { font-size:2.5rem; margin-bottom:.5rem; }
+
+input[type="file"] { display:none; }
+
+/* Toast */
+#toast {
+  position:fixed; bottom:1.5rem; left:50%;
+  transform:translateX(-50%) translateY(60px);
+  background:var(--surface3); border:1px solid var(--border);
+  padding:.55rem 1.2rem; border-radius:999px; font-size:.7rem; color:var(--text);
+  box-shadow:0 8px 24px rgba(0,0,0,.45); transition:transform .25s ease;
+  z-index:9998; white-space:nowrap; max-width:90vw; overflow:hidden; text-overflow:ellipsis;
+}
+#toast.show { transform:translateX(-50%) translateY(0); }
+
+/* Loading spinner overlay */
+#loadingScreen {
+  position:fixed; inset:0; background:var(--bg); z-index:20;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1rem;
+}
+
+.spinner {
+  width:32px; height:32px; border-radius:50%;
+  border:2px solid var(--border); border-top-color:var(--accent);
+  animation:spin .7s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+.loading-label { font-size:.72rem; color:var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- PIN screen -->
+<div id="pinScreen">
+  <div class="pin-card">
+    <div>
+      <div class="pin-logo">Task<span style="font-weight:400;opacity:.45">Flow</span></div>
+      <div class="pin-logo-sub" id="pinLogoSub">enter your PIN to continue</div>
+    </div>
+
+    <!-- User selector (hidden when only 1 user) -->
+    <div id="userSelector" style="display:none;width:100%">
+      <div class="detail-label" style="margin-bottom:.4rem;font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Select user</div>
+      <div id="userList" style="display:flex;flex-direction:column;gap:.35rem;width:100%"></div>
+    </div>
+
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+      <div class="pin-dot" id="pd4"></div>
+      <div class="pin-dot" id="pd5"></div>
+    </div>
+
+    <div class="pin-error-msg" id="pinErrorMsg"></div>
+
+    <div class="pin-pad">
+      <button class="pin-btn" onclick="pinPress('1')">1</button>
+      <button class="pin-btn" onclick="pinPress('2')">2</button>
+      <button class="pin-btn" onclick="pinPress('3')">3</button>
+      <button class="pin-btn" onclick="pinPress('4')">4</button>
+      <button class="pin-btn" onclick="pinPress('5')">5</button>
+      <button class="pin-btn" onclick="pinPress('6')">6</button>
+      <button class="pin-btn" onclick="pinPress('7')">7</button>
+      <button class="pin-btn" onclick="pinPress('8')">8</button>
+      <button class="pin-btn" onclick="pinPress('9')">9</button>
+      <button class="pin-btn empty"></button>
+      <button class="pin-btn" onclick="pinPress('0')">0</button>
+      <button class="pin-btn del" onclick="pinDelete()">⌫</button>
+    </div>
+
+    <div class="pin-attempts" id="pinAttempts"></div>
+  </div>
+</div>
+
+<!-- Loading screen -->
+<div id="loadingScreen" style="display:none">
+  <div class="spinner"></div>
+  <div class="loading-label">Connecting…</div>
+</div>
+
+<!-- Attachment viewer -->
+<div class="viewer-overlay" id="viewerOverlay">
+  <button class="viewer-close" id="viewerClose">✕</button>
+  <div class="viewer-inner" id="viewerInner"></div>
+</div>
+
+<!-- Setup screen -->
+<div id="setupScreen" style="display:none">
+  <div class="setup-card">
+    <div class="setup-logo">
+      <div class="wordmark">Task<span style="font-weight:400;opacity:.45">Flow</span></div>
+      <div class="tagline">github-powered · always in sync</div>
+    </div>
+
+    <div class="setup-divider"></div>
+
+    <div class="setup-steps">
+      <div class="setup-step">
+        <span class="sn">1</span>
+        <span>Go to <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens/new</a> → Generate a classic token</span>
+      </div>
+      <div class="setup-step">
+        <span class="sn">2</span>
+        <span>Give it a name like <code>taskflow</code>, set <strong>No expiration</strong>, tick the <code>repo</code> scope (full control of private repos)</span>
+      </div>
+      <div class="setup-step">
+        <span class="sn">3</span>
+        <span>Create a <strong>private repo</strong> on GitHub (e.g. <code>my-taskflow-data</code>) — this is where your data lives</span>
+      </div>
+      <div class="setup-step">
+        <span class="sn">4</span>
+        <span>Paste your token and repo details below — saved forever in this browser</span>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>GitHub Personal Access Token</label>
+        <input type="password" id="inputToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+        <div class="hint">
+          <a href="https://github.com/settings/tokens/new" target="_blank">Create token →</a>
+          &nbsp;Select scope: <code>repo</code> · Expiration: <code>No expiration</code>
+        </div>
+      </div>
+      <div class="field">
+        <label>GitHub Username</label>
+        <input type="text" id="inputUser" placeholder="your-github-username">
+      </div>
+      <div class="field">
+        <label>Repository Name</label>
+        <input type="text" id="inputRepo" placeholder="my-taskflow-data">
+        <div class="hint">Must be a private repo you already created on GitHub</div>
+      </div>
+    </div>
+
+    <div class="setup-error" id="setupError"></div>
+
+    <button class="btn-connect" id="connectBtn" onclick="connect()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+      Connect GitHub Repo
+    </button>
+  </div>
+</div>
+
+<!-- Main app -->
+<div id="appScreen">
+  <header>
+    <div>
+      <div class="wordmark-sm">Task<span>Flow</span></div>
+      <div class="header-sub" id="repoLabel"></div>
+    </div>
+    <div class="header-right">
+      <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;justify-content:flex-end">
+        <div class="sync-pill" id="syncPill">
+          <span class="s-dot"></span>
+          <span id="syncLabel">Connecting…</span>
+        </div>
+        <button class="btn-signout" onclick="signOut()">disconnect</button>
+      </div>
+      <div class="stats" id="globalStats"></div>
+    </div>
+  </header>
+
+  <div class="add-group-bar">
+    <input type="text" id="newGroupInput" placeholder="New group name…" maxlength="60">
+    <button class="btn-primary" onclick="addGroup()">+ Add Group</button>
+  </div>
+
+  <div class="groups" id="groupsContainer"></div>
+
+  <div class="empty-state" id="emptyState" style="display:none">
+    <div class="big">📋</div>
+    Add a group above to get started.<br>
+    <span style="font-size:.65rem">Everything saves to your GitHub repo automatically.</span>
+  </div>
+</div>
+
+<div id="statusPortal"></div>
+<input type="file" id="fileInput" multiple>
+<div id="toast"></div>
+
+<!-- config.js must load before the main script -->
+<script src="config.js"></script>
+<script>
+'use strict';
+
+// ── All constants (must be at top before any function uses them) ──
+const LS_AUTH    = 'tf_authed';
+const LS_TOKEN   = 'tf_gh_token';
+const LS_USER    = 'tf_gh_user';
+const LS_REPO    = 'tf_gh_repo';
+const LS_DATA    = 'tf_data_cache';
+const LS_SHAS    = 'tf_shas';
+const DATA_PATH  = 'taskflow-data.json';
+const ATT_DIR    = 'attachments';
+const LOCKOUT_MS = (APP_CONFIG.LOCKOUT_MINUTES || 5) * 60 * 1000;
+
+const STATUSES = [
+  { key:'todo',     label:'To Do',       color:'#5a5d7a' },
+  { key:'started',  label:'Started',     color:'#f59e42' },
+  { key:'progress', label:'In Progress', color:'#22d3ee' },
+  { key:'done',     label:'Done',        color:'#34d399' },
+];
+
+// ── State ─────────────────────────────────────────────
+let data          = [];
+let ghToken       = '';
+let ghUser        = '';
+let ghRepo        = '';
+let shas          = {};
+let saveTimer     = null;
+let openDropdown  = null;
+let pendingUpload = null;
+let selectedUser  = null;
+let pinEntry      = '';
+let pinFailed     = 0;
+let pinLocked     = false;
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// ── Build user selector on load ───────────────────────
+function buildUserSelector() {
+  const users = APP_CONFIG.users || [];
+
+  if (users.length === 1) {
+    // Only one user — auto-select, hide selector
+    selectedUser = users[0];
+    document.getElementById('pinLogoSub').textContent =
+      `Hello ${selectedUser.username} — enter your PIN`;
+    return;
+  }
+
+  // Multiple users — show selector
+  document.getElementById('userSelector').style.display = 'block';
+  document.getElementById('pinLogoSub').textContent = 'Select user and enter PIN';
+
+  const list = document.getElementById('userList');
+  list.innerHTML = users.map((u, i) => `
+    <button class="user-btn" id="ubtn-${i}" onclick="selectUser(${i})">
+      <div class="u-avatar">${u.username.charAt(0).toUpperCase()}</div>
+      ${u.username}
+    </button>`).join('');
+
+  // Auto-select first user
+  selectUser(0);
+}
+
+function selectUser(index) {
+  const users = APP_CONFIG.users || [];
+  selectedUser = users[index];
+
+  // Update active state
+  users.forEach((_, i) => {
+    const btn = document.getElementById('ubtn-' + i);
+    if (btn) btn.classList.toggle('active', i === index);
+  });
+
+  // Reset pin entry when switching users
+  pinEntry = '';
+  updatePinDots();
+  clearPinError();
+  document.getElementById('pinLogoSub').textContent =
+    `Hello ${selectedUser.username} — enter your PIN`;
+}
+
+function pinPress(digit) {
+  if (pinLocked || pinEntry.length >= 6) return;
+  pinEntry += digit;
+  updatePinDots();
+  if (pinEntry.length === 6) setTimeout(checkPin, 120);
+}
+
+function pinDelete() {
+  if (pinLocked) return;
+  pinEntry = pinEntry.slice(0, -1);
+  updatePinDots();
+  clearPinError();
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 6; i++) {
+    const dot = document.getElementById('pd' + i);
+    dot.classList.toggle('filled', i < pinEntry.length);
+    dot.classList.remove('error');
+  }
+}
+
+async function checkPin() {
+  if (!selectedUser) { pinEntry = ''; return; }
+  const hash = await sha256(pinEntry);
+
+  if (hash === selectedUser.pinHash) {
+    sessionStorage.setItem(LS_AUTH, selectedUser.username);
+    pinFailed = 0;
+    document.getElementById('pinScreen').classList.add('hidden');
+    bootApp();
+  } else {
+    pinFailed++;
+    pinEntry = '';
+    showPinError(pinFailed);
+    for (let i = 0; i < 6; i++) {
+      const dot = document.getElementById('pd' + i);
+      dot.classList.remove('filled');
+      dot.classList.add('error');
+    }
+    setTimeout(() => {
+      for (let i = 0; i < 6; i++)
+        document.getElementById('pd' + i).classList.remove('error');
+    }, 400);
+    if (pinFailed >= APP_CONFIG.MAX_ATTEMPTS) lockout();
+  }
+}
+
+function showPinError(attempts) {
+  const remaining = APP_CONFIG.MAX_ATTEMPTS - attempts;
+  const msg = document.getElementById('pinErrorMsg');
+  msg.textContent = remaining > 0
+    ? `Incorrect PIN — ${remaining} attempt${remaining !== 1 ? 's' : ''} left`
+    : '';
+}
+
+function clearPinError() {
+  document.getElementById('pinErrorMsg').textContent = '';
+}
+
+function lockout() {
+  pinLocked = true;
+  const until = Date.now() + LOCKOUT_MS;
+  localStorage.setItem('tf_lockout', until);
+  const msg = document.getElementById('pinErrorMsg');
+  msg.textContent = `Too many attempts — locked for ${APP_CONFIG.LOCKOUT_MINUTES} min`;
+  document.querySelectorAll('.pin-btn').forEach(b => {
+    b.style.opacity = '.3'; b.style.pointerEvents = 'none';
+  });
+  const interval = setInterval(() => {
+    const remaining = Math.ceil((until - Date.now()) / 1000);
+    if (remaining <= 0) {
+      clearInterval(interval);
+      pinLocked = false; pinFailed = 0;
+      localStorage.removeItem('tf_lockout');
+      msg.textContent = '';
+      document.querySelectorAll('.pin-btn').forEach(b => {
+        b.style.opacity = ''; b.style.pointerEvents = '';
+      });
+      document.getElementById('pinAttempts').textContent = '';
+    } else {
+      document.getElementById('pinAttempts').textContent =
+        `Try again in ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
+    }
+  }, 1000);
+}
+
+document.addEventListener('keydown', e => {
+  if (document.getElementById('pinScreen').classList.contains('hidden')) return;
+  if (e.key >= '0' && e.key <= '9') pinPress(e.key);
+  if (e.key === 'Backspace') pinDelete();
+});
+
+// ── Init auth ─────────────────────────────────────────
+function initAuth() {
+  // Check lockout
+  const lockUntil = parseInt(localStorage.getItem('tf_lockout') || '0');
+  if (lockUntil > Date.now()) {
+    pinLocked = true;
+    const msg = document.getElementById('pinErrorMsg');
+    msg.textContent = 'Too many attempts — locked';
+    document.querySelectorAll('.pin-btn').forEach(b => {
+      b.style.opacity = '.3'; b.style.pointerEvents = 'none';
+    });
+    const interval = setInterval(() => {
+      const remaining = Math.ceil((lockUntil - Date.now()) / 1000);
+      if (remaining <= 0) {
+        clearInterval(interval);
+        pinLocked = false;
+        localStorage.removeItem('tf_lockout');
+        msg.textContent = '';
+        document.querySelectorAll('.pin-btn').forEach(b => {
+          b.style.opacity = ''; b.style.pointerEvents = '';
+        });
+        document.getElementById('pinAttempts').textContent = '';
+      } else {
+        document.getElementById('pinAttempts').textContent =
+          `Try again in ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
+      }
+    }, 1000);
+  }
+
+  // Build user selector
+  buildUserSelector();
+
+  // Check if already authed this session
+  if (sessionStorage.getItem(LS_AUTH)) {
+    document.getElementById('pinScreen').classList.add('hidden');
+    bootApp();
+    return;
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────
+window.addEventListener('load', () => { initAuth(); });
+
+// rename old boot to bootApp
+async function bootApp() {
+  // DOM is ready here
+  window.portal    = document.getElementById('statusPortal');
+  window.fileInput = document.getElementById('fileInput');
+  fileInput.addEventListener('change', handleFileUpload);
+  ghToken = localStorage.getItem(LS_TOKEN) || '';
+  ghUser  = localStorage.getItem(LS_USER)  || '';
+  ghRepo  = localStorage.getItem(LS_REPO)  || '';
+
+  try { shas = JSON.parse(localStorage.getItem(LS_SHAS) || '{}'); } catch { shas = {}; }
+  try { data = JSON.parse(localStorage.getItem(LS_DATA) || '[]'); } catch { data = []; }
+
+  if (ghToken && ghUser && ghRepo) {
+    showLoading();
+    const ok = await silentConnect();
+    if (ok) { showApp(); return; }
+  }
+
+  hideLoading();
+  showSetup();
+}
+
+
+async function silentConnect() {
+  try {
+    // 8 second timeout so it never hangs forever
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+
+    const res = await ghFetch(
+      `https://api.github.com/repos/${ghUser}/${ghRepo}`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timer);
+
+    if (!res.ok) return false;
+
+    await loadFromGitHub();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ── GitHub API ────────────────────────────────────────
+function ghFetch(url, options = {}) {
+  return fetch(url, {
+    ...options,
+    headers: {
+      'Authorization': `token ${ghToken}`,
+      'Accept': 'application/vnd.github.v3+json',
+      ...(options.headers || {}),
     },
+  });
+}
 
-    // ── Example: add more users like this ──
-    // {
-    //   username: 'Alice',
-    //   pinHash:  '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
-    //             // ↑ hash of PIN: 123456
-    // },
-    // {
-    //   username: 'Bob',
-    //   pinHash:  '91b4d142823f7d20c5f08df69122de43f35f057a988d9619f6d3138485c9a203',
-    //             // ↑ hash of PIN: 000000
-    // },
-  ],
+async function loadFromGitHub() {
+  try {
+    const res = await ghFetch(
+      `https://api.github.com/repos/${ghUser}/${ghRepo}/contents/${DATA_PATH}`
+    );
 
-  // ── Security settings ────────────────────────────────
+    if (res.status === 404) {
+      // File doesn't exist yet — start fresh and create it
+      data = [];
+      await writeFileToGitHub(DATA_PATH, JSON.stringify([], null, 2), null);
+      return;
+    }
 
-  // How many wrong PIN attempts before lockout
-  MAX_ATTEMPTS: 5,
+    if (!res.ok) throw new Error('Failed to load data');
 
-  // How long the lockout lasts (in minutes)
-  LOCKOUT_MINUTES: 5,
+    const json = await res.json();
+    shas[DATA_PATH] = json.sha;
+    localStorage.setItem(LS_SHAS, JSON.stringify(shas));
 
-  // How long a session stays unlocked (in minutes)
-  // After this time the PIN screen shows again
-  // Set to 0 to require PIN every single session
-  SESSION_TIMEOUT_MINUTES: 0,
+    const content = atob(json.content.replace(/\n/g, ''));
+    data = JSON.parse(content);
+    localStorage.setItem(LS_DATA, JSON.stringify(data));
+  } catch(e) {
+    // Use cached data if GitHub fails
+    console.warn('GitHub load failed, using cache:', e);
+  }
+}
 
-};
+async function writeFileToGitHub(path, content, sha) {
+  const body = {
+    message: `TaskFlow update: ${path}`,
+    content: btoa(unescape(encodeURIComponent(content))),
+  };
+  if (sha) body.sha = sha;
+
+  const res = await ghFetch(
+    `https://api.github.com/repos/${ghUser}/${ghRepo}/contents/${path}`,
+    { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `GitHub write failed (${res.status})`);
+  }
+
+  const result = await res.json();
+  // Cache the new SHA so future updates work
+  shas[path] = result.content.sha;
+  localStorage.setItem(LS_SHAS, JSON.stringify(shas));
+  return result;
+}
+
+async function uploadAttachmentToGitHub(path, base64Data) {
+  // base64Data is a dataURL like "data:image/png;base64,xxxx"
+  const rawB64 = base64Data.split(',')[1];
+  const body = {
+    message: `TaskFlow attachment: ${path}`,
+    content: rawB64,
+  };
+
+  const sha = shas[path];
+  if (sha) body.sha = sha;
+
+  const res = await ghFetch(
+    `https://api.github.com/repos/${ghUser}/${ghRepo}/contents/${path}`,
+    { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Upload failed');
+  }
+
+  const result = await res.json();
+  shas[path] = result.content.sha;
+  localStorage.setItem(LS_SHAS, JSON.stringify(shas));
+
+  // Return the raw GitHub URL to serve the file
+  return result.content.download_url;
+}
+
+async function deleteFileFromGitHub(path, sha) {
+  const body = { message: `TaskFlow delete: ${path}`, sha };
+  const res = await ghFetch(
+    `https://api.github.com/repos/${ghUser}/${ghRepo}/contents/${path}`,
+    { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+  );
+  if (res.ok) {
+    delete shas[path];
+    localStorage.setItem(LS_SHAS, JSON.stringify(shas));
+  }
+}
+
+// ── Connect flow ──────────────────────────────────────
+async function connect() {
+  const token = document.getElementById('inputToken').value.trim();
+  const user  = document.getElementById('inputUser').value.trim();
+  const repo  = document.getElementById('inputRepo').value.trim();
+
+  if (!token || !user || !repo) {
+    showSetupError('Please fill in all three fields.');
+    return;
+  }
+
+  document.getElementById('connectBtn').disabled = true;
+  document.getElementById('connectBtn').textContent = 'Connecting…';
+  hideSetupError();
+
+  // Verify credentials
+  const res = await fetch(`https://api.github.com/repos/${user}/${repo}`, {
+    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+  });
+
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({}));
+    showSetupError(json.message === 'Not Found'
+      ? 'Repo not found. Make sure it exists and the token has "repo" scope.'
+      : `Error: ${json.message || res.status}`);
+    document.getElementById('connectBtn').disabled = false;
+    document.getElementById('connectBtn').innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg> Connect GitHub Repo`;
+    return;
+  }
+
+  // Save credentials
+  ghToken = token; ghUser = user; ghRepo = repo;
+  localStorage.setItem(LS_TOKEN, token);
+  localStorage.setItem(LS_USER, user);
+  localStorage.setItem(LS_REPO, repo);
+
+  // Load or create data file
+  showLoading();
+  await loadFromGitHub();
+  showApp();
+  toast('✅ Connected to ' + user + '/' + repo);
+}
+
+function signOut() {
+  if (!confirm('Disconnect from GitHub? Your data stays in the repo.')) return;
+  localStorage.removeItem(LS_TOKEN);
+  localStorage.removeItem(LS_USER);
+  localStorage.removeItem(LS_REPO);
+  ghToken = ghUser = ghRepo = '';
+  showSetup();
+}
+
+// ── Save (debounced 800ms) ────────────────────────────
+function save() {
+  // Always cache locally
+  try { localStorage.setItem(LS_DATA, JSON.stringify(data)); } catch {}
+
+  setSyncing();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      const sha = shas[DATA_PATH] || null;
+      await writeFileToGitHub(DATA_PATH, JSON.stringify(data, null, 2), sha);
+      setSynced();
+    } catch(e) {
+      setSyncError();
+      toast('⚠️ Sync failed: ' + e.message);
+    }
+  }, 800);
+
+  render();
+}
+
+// ── UI helpers ────────────────────────────────────────
+function showLoading() {
+  document.getElementById('loadingScreen').style.display = 'flex';
+  document.getElementById('setupScreen').style.display  = 'none';
+  document.getElementById('appScreen').style.display    = 'none';
+}
+
+function hideLoading() {
+  document.getElementById('loadingScreen').style.display = 'none';
+}
+
+function showSetup() {
+  hideLoading();
+  document.getElementById('setupScreen').style.display = 'flex';
+  document.getElementById('appScreen').style.display   = 'none';
+  // Pre-fill if we have values
+  if (ghToken) document.getElementById('inputToken').value = ghToken;
+  if (ghUser)  document.getElementById('inputUser').value  = ghUser;
+  if (ghRepo)  document.getElementById('inputRepo').value  = ghRepo;
+}
+
+function showApp() {
+  hideLoading();
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display   = 'block';
+  document.getElementById('repoLabel').textContent     = `${ghUser}/${ghRepo}`;
+  setSynced();
+  render();
+}
+
+function showSetupError(msg) {
+  const el = document.getElementById('setupError');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function hideSetupError() {
+  document.getElementById('setupError').classList.remove('show');
+}
+
+function setSyncing() {
+  const pill = document.getElementById('syncPill');
+  pill.className = 'sync-pill saving';
+  document.getElementById('syncLabel').textContent = 'Saving…';
+}
+
+function setSynced() {
+  const pill = document.getElementById('syncPill');
+  pill.className = 'sync-pill ok';
+  document.getElementById('syncLabel').textContent = 'Synced ✓';
+}
+
+function setSyncError() {
+  const pill = document.getElementById('syncPill');
+  pill.className = 'sync-pill error';
+  document.getElementById('syncLabel').textContent = 'Sync error';
+}
+
+// ── Toast ─────────────────────────────────────────────
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ── Attachment viewer ─────────────────────────────────
+function openViewer(url, name, type) {
+  const inner = document.getElementById('viewerInner');
+  inner.innerHTML = '';
+
+  let content = '';
+  if (type && type.startsWith('image/')) {
+    content = `<img src="${esc(url)}" alt="${esc(name)}">`;
+  } else if (type === 'application/pdf') {
+    content = `<iframe src="${esc(url)}"></iframe>`;
+  } else {
+    content = `<div class="no-preview">
+      <div class="big-icon">${fileIcon(type)}</div>
+      <div class="np-name">${esc(name)}</div>
+      <div class="np-hint">No preview available — click below to open</div>
+    </div>`;
+  }
+
+  inner.innerHTML = content + `
+    <div class="viewer-toolbar">
+      <span class="viewer-name">${esc(name)}</span>
+      <a href="${esc(url)}" target="_blank" rel="noopener">
+        <button class="btn-newtab">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Open in new tab
+        </button>
+      </a>
+    </div>`;
+
+  document.getElementById('viewerOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeViewer() {
+  document.getElementById('viewerOverlay').classList.remove('show');
+  document.getElementById('viewerInner').innerHTML = '';
+  document.body.style.overflow = '';
+}
+
+document.getElementById('viewerOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('viewerOverlay')) closeViewer();
+});
+document.getElementById('viewerClose').addEventListener('click', closeViewer);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeViewer(); });
+
+// ── Utils ─────────────────────────────────────────────
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fileIcon(t) {
+  if (!t) return '📎';
+  if (t.startsWith('image/')) return '🖼️';
+  if (t === 'application/pdf') return '📄';
+  if (t.includes('word')) return '📝';
+  if (t.includes('sheet') || t.includes('excel')) return '📊';
+  if (t.includes('zip') || t.includes('compressed')) return '🗜️';
+  if (t.startsWith('video/')) return '🎬';
+  if (t.startsWith('audio/')) return '🎵';
+  return '📎';
+}
+
+// ── Groups ────────────────────────────────────────────
+function addGroup() {
+  const inp = document.getElementById('newGroupInput');
+  const name = inp.value.trim(); if (!name) return;
+  data.push({ id:uid(), name, open:true, tasks:[] });
+  inp.value = ''; save();
+}
+
+function deleteGroup(gid) {
+  if (!confirm('Delete this group and all its tasks?')) return;
+  data = data.filter(g => g.id !== gid); save();
+}
+
+function toggleGroup(gid) {
+  const g = data.find(g => g.id === gid);
+  if (g) { g.open = !g.open; save(); }
+}
+
+// ── Tasks ─────────────────────────────────────────────
+function addTask(gid) {
+  const inp = document.getElementById('task-input-' + gid);
+  const name = inp.value.trim(); if (!name) return;
+  data.find(g => g.id === gid).tasks.push({
+    id:uid(), name, status:'todo', expanded:false, notes:'', attachments:[]
+  });
+  inp.value = ''; save();
+}
+
+function deleteTask(gid, tid) {
+  const g = data.find(g => g.id === gid);
+  g.tasks = g.tasks.filter(t => t.id !== tid); save();
+}
+
+function toggleExpand(gid, tid) {
+  const t = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
+  t.expanded = !t.expanded; save();
+}
+
+function saveNotes(gid, tid, val) {
+  data.find(g=>g.id===gid).tasks.find(t=>t.id===tid).notes = val; save();
+}
+
+// ── Status ────────────────────────────────────────────
+function setStatus(gid, tid, status) {
+  data.find(g=>g.id===gid).tasks.find(t=>t.id===tid).status = status;
+  closeDropdown(); save();
+}
+
+function openStatusDropdown(e, gid, tid) {
+  e.stopPropagation();
+  if (openDropdown === tid) { closeDropdown(); return; }
+  openDropdown = tid;
+  portal.innerHTML = STATUSES.map(s => `
+    <button class="status-option" onclick="setStatus('${gid}','${tid}','${s.key}')">
+      <span class="dot" style="background:${s.color}"></span>${s.label}
+    </button>`).join('');
+  const r = e.currentTarget.getBoundingClientRect(), h = STATUSES.length * 36;
+  let top = r.bottom + 4, left = r.right - 148;
+  if (top + h > window.innerHeight - 8) top = r.top - h - 4;
+  if (left < 8) left = 8;
+  portal.style.top = top+'px'; portal.style.left = left+'px';
+  portal.classList.add('open');
+}
+
+function closeDropdown() {
+  portal.classList.remove('open'); portal.innerHTML = ''; openDropdown = null;
+}
+
+document.addEventListener('click', closeDropdown);
+
+// ── Attachments ───────────────────────────────────────
+function triggerAttach(gid, tid) {
+  pendingUpload = {gid, tid}; fileInput.value = ''; fileInput.click();
+}
+
+async function handleFileUpload() {
+  if (!pendingUpload) return;
+  const {gid, tid} = pendingUpload;
+  const t = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
+  const files = Array.from(fileInput.files);
+  if (!files.length) return;
+
+  toast(`⬆️ Uploading ${files.length} file${files.length>1?'s':''}…`);
+  setSyncing();
+
+  for (const file of files) {
+    try {
+      // Read as base64 dataURL
+      const dataUrl = await readFileAsDataURL(file);
+      // Sanitise filename
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const ghPath   = `${ATT_DIR}/${tid}_${uid()}_${safeName}`;
+
+      // Upload to GitHub
+      const downloadUrl = await uploadAttachmentToGitHub(ghPath, dataUrl);
+
+      t.attachments.push({
+        id:  uid(),
+        name: file.name,
+        type: file.type,
+        url:  downloadUrl,   // served directly from GitHub
+        path: ghPath,        // needed to delete later
+      });
+    } catch(e) {
+      toast('⚠️ Upload failed for ' + file.name + ': ' + e.message);
+    }
+  }
+
+  save();
+  toast('✅ Uploaded successfully');
+});
+
+function readFileAsDataURL(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload  = ev => res(ev.target.result);
+    r.onerror = () => rej(new Error('Read failed'));
+    r.readAsDataURL(file);
+  });
+}
+
+async function deleteAttachment(gid, tid, aid) {
+  const t   = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
+  const att = t.attachments.find(a=>a.id===aid);
+  if (!att) return;
+
+  t.attachments = t.attachments.filter(a=>a.id!==aid);
+  save();
+
+  // Delete from GitHub in background
+  if (att.path && shas[att.path]) {
+    deleteFileFromGitHub(att.path, shas[att.path]).catch(() => {});
+  }
+}
+
+// ── Render ────────────────────────────────────────────
+function render() {
+  const container  = document.getElementById('groupsContainer');
+  const emptyState = document.getElementById('emptyState');
+  const stats      = document.getElementById('globalStats');
+
+  let tt=0, td=0;
+  data.forEach(g => { tt+=g.tasks.length; td+=g.tasks.filter(t=>t.status==='done').length; });
+
+  stats.innerHTML = `<strong>${data.length}</strong> group${data.length!==1?'s':''} &nbsp;·&nbsp; <strong>${tt}</strong> task${tt!==1?'s':''} &nbsp;·&nbsp; <strong>${td}</strong> done`;
+  emptyState.style.display = data.length===0 ? 'block' : 'none';
+
+  const chevD = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+  const chevU = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>`;
+
+  container.innerHTML = data.map(g => {
+    const dc  = g.tasks.filter(t=>t.status==='done').length;
+    const tot = g.tasks.length;
+    const pct = tot===0 ? 0 : Math.round(dc/tot*100);
+
+    const tasksHtml = tot===0
+      ? `<div class="empty-tasks">No tasks yet — add one below</div>`
+      : g.tasks.map(t => {
+          const st   = STATUSES.find(s=>s.key===t.status) || STATUSES[0];
+          const atts = t.attachments || [];
+
+          const attachItems = atts.map(a => {
+            if (a.type && a.type.startsWith('image/')) return `
+              <div class="attach-img"
+                data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
+                onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">
+                <img src="${esc(a.url)}" alt="${esc(a.name)}" loading="lazy">
+                <div class="img-overlay">🔍</div>
+                <button class="del-btn" onclick="event.stopPropagation();deleteAttachment('${g.id}','${t.id}','${a.id}')">✕</button>
+              </div>`;
+            return `
+              <div class="attach-file"
+                data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
+                onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">
+                <span class="file-icon">${fileIcon(a.type)}</span>
+                <span class="file-name">${esc(a.name)}</span>
+                <button class="del-btn" onclick="event.stopPropagation();deleteAttachment('${g.id}','${t.id}','${a.id}')">✕</button>
+              </div>`;
+          }).join('');
+
+          return `
+          <div class="task-wrap ${t.status==='done'?'done':''} ${t.expanded?'expanded':''}">
+            <div class="task">
+              <button class="btn-icon neutral" onclick="toggleExpand('${g.id}','${t.id}')">${t.expanded?chevU:chevD}</button>
+              <span class="task-name">${esc(t.name)}</span>
+              ${atts.length ? `<span class="attach-badge">📎 ${atts.length}</span>` : ''}
+              <button class="status-btn" data-status="${t.status}" onclick="openStatusDropdown(event,'${g.id}','${t.id}')">
+                <span class="status-dot"></span>${st.label}
+              </button>
+              <button class="btn-icon" onclick="deleteTask('${g.id}','${t.id}')" title="Delete">✕</button>
+            </div>
+            <div class="task-detail">
+              <div class="detail-section">
+                <div class="detail-label">📝 &nbsp;Notes</div>
+                <textarea class="task-notes" placeholder="Add notes, links, context…"
+                  oninput="saveNotes('${g.id}','${t.id}',this.value)">${esc(t.notes||'')}</textarea>
+              </div>
+              <div class="detail-section">
+                <div class="detail-label">📎 &nbsp;Attachments <span style="font-size:.58rem;text-transform:none;letter-spacing:0;color:var(--muted)">(click to preview)</span></div>
+                ${atts.length ? `<div class="attach-grid">${attachItems}</div>` : ''}
+                <div class="attach-drop" onclick="triggerAttach('${g.id}','${t.id}')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                  Click to attach — files upload directly to your GitHub repo
+                </div>
+              </div>
+            </div>
+          </div>`;
+        }).join('');
+
+    return `
+    <div class="group ${g.open?'open':''}" id="group-${g.id}">
+      <div class="group-header" onclick="toggleGroup('${g.id}')">
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        <span class="group-name">${esc(g.name)}</span>
+        <div class="group-meta">
+          <span class="pill pill-done">${dc} done</span>
+          <span class="pill pill-total">${tot} total</span>
+        </div>
+        <button class="btn-icon" onclick="event.stopPropagation();deleteGroup('${g.id}')" title="Delete group">✕</button>
+      </div>
+      <div class="group-progress"><div class="group-progress-fill" style="width:${pct}%"></div></div>
+      <div class="group-body">
+        <div class="tasks">${tasksHtml}</div>
+        <div class="add-task-row">
+          <input type="text" id="task-input-${g.id}" placeholder="Add a task…" maxlength="120"
+            onkeydown="if(event.key==='Enter') addTask('${g.id}')">
+          <button class="btn-sm" onclick="addTask('${g.id}')">Add</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('newGroupInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addGroup();
+});
+</script>
+</body>
+</html>
