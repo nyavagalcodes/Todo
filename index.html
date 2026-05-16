@@ -644,12 +644,7 @@ input[type="file"] { display:none; }
     </div>
 
     <div class="pin-dots" id="pinDots">
-      <div class="pin-dot" id="pd0"></div>
-      <div class="pin-dot" id="pd1"></div>
-      <div class="pin-dot" id="pd2"></div>
-      <div class="pin-dot" id="pd3"></div>
-      <div class="pin-dot" id="pd4"></div>
-      <div class="pin-dot" id="pd5"></div>
+      <!-- dots built dynamically from PIN_LENGTH in config.js -->
     </div>
 
     <div class="pin-error-msg" id="pinErrorMsg"></div>
@@ -780,19 +775,49 @@ input[type="file"] { display:none; }
 <input type="file" id="fileInput" multiple>
 <div id="toast"></div>
 
+<!-- ═══════════════════════════════════════════
+     CONFIG — edit this block to change PIN
+     To get a PIN hash:
+     1. Go to https://emn178.github.io/online-tools/sha256.html
+     2. Type your 6-digit PIN → copy the hash
+     3. Replace pinHash value below
+     4. Commit and push — done!
+════════════════════════════════════════════ -->
+<script src="config.js"></script>
 <script>
 'use strict';
 
-// ── PIN Auth ──────────────────────────────────────────
-// PIN_HASH, MAX_ATTEMPTS and LOCKOUT_MINUTES are loaded
-// from config.js — edit that file to change your PIN.
+// ── All constants ─────────────────────────────
 const LS_AUTH    = 'tf_authed';
-const LOCKOUT_MS = (APP_CONFIG.LOCKOUT_MINUTES || 5) * 60 * 1000;
+const LS_TOKEN   = 'tf_gh_token';
+const LS_USER    = 'tf_gh_user';
+const LS_REPO    = 'tf_gh_repo';
+const LS_DATA    = 'tf_data_cache';
+const LS_SHAS    = 'tf_shas';
+const DATA_PATH  = 'taskflow-data.json';
+const ATT_DIR    = 'attachments';
+const LOCKOUT_MS = (window.APP_CONFIG.LOCKOUT_MINUTES || 5) * 60 * 1000;
 
+const STATUSES = [
+  { key:'todo',     label:'To Do',       color:'#5a5d7a' },
+  { key:'started',  label:'Started',     color:'#f59e42' },
+  { key:'progress', label:'In Progress', color:'#22d3ee' },
+  { key:'done',     label:'Done',        color:'#34d399' },
+];
+
+// ── State ─────────────────────────────────────────────
+let data          = [];
+let ghToken       = '';
+let ghUser        = '';
+let ghRepo        = '';
+let shas          = {};
+let saveTimer     = null;
+let openDropdown  = null;
+let pendingUpload = null;
+let selectedUser  = null;
 let pinEntry      = '';
 let pinFailed     = 0;
 let pinLocked     = false;
-let selectedUser  = null; // currently selected user object
 
 async function sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -801,7 +826,15 @@ async function sha256(str) {
 
 // ── Build user selector on load ───────────────────────
 function buildUserSelector() {
-  const users = APP_CONFIG.users || [];
+  const cfg   = window.window.APP_CONFIG;
+  const users = cfg.users || [];
+  const pinLen = cfg.PIN_LENGTH || 6;
+
+  // Build dots dynamically based on PIN_LENGTH
+  const dotsEl = document.getElementById('pinDots');
+  dotsEl.innerHTML = Array.from({length: pinLen}, (_, i) =>
+    `<div class="pin-dot" id="pd${i}"></div>`
+  ).join('');
 
   if (users.length === 1) {
     // Only one user — auto-select, hide selector
@@ -827,7 +860,7 @@ function buildUserSelector() {
 }
 
 function selectUser(index) {
-  const users = APP_CONFIG.users || [];
+  const users = window.APP_CONFIG.users || [];
   selectedUser = users[index];
 
   // Update active state
@@ -845,10 +878,11 @@ function selectUser(index) {
 }
 
 function pinPress(digit) {
-  if (pinLocked || pinEntry.length >= 6) return;
+  const pinLen = (window.window.APP_CONFIG.PIN_LENGTH || 6);
+  if (pinLocked || pinEntry.length >= pinLen) return;
   pinEntry += digit;
   updatePinDots();
-  if (pinEntry.length === 6) setTimeout(checkPin, 120);
+  if (pinEntry.length === pinLen) setTimeout(checkPin, 120);
 }
 
 function pinDelete() {
@@ -859,8 +893,10 @@ function pinDelete() {
 }
 
 function updatePinDots() {
-  for (let i = 0; i < 6; i++) {
+  const pinLen = window.window.APP_CONFIG.PIN_LENGTH || 6;
+  for (let i = 0; i < pinLen; i++) {
     const dot = document.getElementById('pd' + i);
+    if (!dot) continue;
     dot.classList.toggle('filled', i < pinEntry.length);
     dot.classList.remove('error');
   }
@@ -879,21 +915,25 @@ async function checkPin() {
     pinFailed++;
     pinEntry = '';
     showPinError(pinFailed);
-    for (let i = 0; i < 6; i++) {
+    const pinLen = window.window.APP_CONFIG.PIN_LENGTH || 6;
+    for (let i = 0; i < pinLen; i++) {
       const dot = document.getElementById('pd' + i);
+      if (!dot) continue;
       dot.classList.remove('filled');
       dot.classList.add('error');
     }
     setTimeout(() => {
-      for (let i = 0; i < 6; i++)
-        document.getElementById('pd' + i).classList.remove('error');
+      for (let i = 0; i < pinLen; i++) {
+        const dot = document.getElementById('pd' + i);
+        if (dot) dot.classList.remove('error');
+      }
     }, 400);
-    if (pinFailed >= APP_CONFIG.MAX_ATTEMPTS) lockout();
+    if (pinFailed >= window.APP_CONFIG.MAX_ATTEMPTS) lockout();
   }
 }
 
 function showPinError(attempts) {
-  const remaining = APP_CONFIG.MAX_ATTEMPTS - attempts;
+  const remaining = window.APP_CONFIG.MAX_ATTEMPTS - attempts;
   const msg = document.getElementById('pinErrorMsg');
   msg.textContent = remaining > 0
     ? `Incorrect PIN — ${remaining} attempt${remaining !== 1 ? 's' : ''} left`
@@ -909,7 +949,7 @@ function lockout() {
   const until = Date.now() + LOCKOUT_MS;
   localStorage.setItem('tf_lockout', until);
   const msg = document.getElementById('pinErrorMsg');
-  msg.textContent = `Too many attempts — locked for ${APP_CONFIG.LOCKOUT_MINUTES} min`;
+  msg.textContent = `Too many attempts — locked for ${window.APP_CONFIG.LOCKOUT_MINUTES} min`;
   document.querySelectorAll('.pin-btn').forEach(b => {
     b.style.opacity = '.3'; b.style.pointerEvents = 'none';
   });
@@ -976,32 +1016,6 @@ function initAuth() {
     return;
   }
 }
-
-// ── Config keys ───────────────────────────────────────
-const LS_TOKEN  = 'tf_gh_token';
-const LS_USER   = 'tf_gh_user';
-const LS_REPO   = 'tf_gh_repo';
-const LS_DATA   = 'tf_data_cache';
-const LS_SHAS   = 'tf_shas';
-const DATA_PATH = 'taskflow-data.json';
-const ATT_DIR   = 'attachments';
-
-const STATUSES = [
-  { key:'todo',     label:'To Do',       color:'#5a5d7a' },
-  { key:'started',  label:'Started',     color:'#f59e42' },
-  { key:'progress', label:'In Progress', color:'#22d3ee' },
-  { key:'done',     label:'Done',        color:'#34d399' },
-];
-
-// ── State ─────────────────────────────────────────────
-let data          = [];
-let ghToken       = '';
-let ghUser        = '';
-let ghRepo        = '';
-let shas          = {};
-let saveTimer     = null;
-let openDropdown  = null;
-let pendingUpload = null;
 
 // ── Boot ──────────────────────────────────────────────
 window.addEventListener('load', () => { initAuth(); });
@@ -1473,7 +1487,7 @@ async function handleFileUpload() {
 
   save();
   toast('✅ Uploaded successfully');
-});
+}
 
 function readFileAsDataURL(file) {
   return new Promise((res, rej) => {
@@ -1599,6 +1613,28 @@ function render() {
 document.getElementById('newGroupInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') addGroup();
 });
+
+// ── Expose functions to global scope for onclick handlers ──
+// Required because 'use strict' prevents auto-global attachment
+window.pinPress          = pinPress;
+window.pinDelete         = pinDelete;
+window.selectUser        = selectUser;
+window.addGroup          = addGroup;
+window.deleteGroup       = deleteGroup;
+window.toggleGroup       = toggleGroup;
+window.addTask           = addTask;
+window.deleteTask        = deleteTask;
+window.toggleExpand      = toggleExpand;
+window.saveNotes         = saveNotes;
+window.setStatus         = setStatus;
+window.openStatusDropdown= openStatusDropdown;
+window.triggerAttach     = triggerAttach;
+window.deleteAttachment  = deleteAttachment;
+window.openViewer        = openViewer;
+window.closeViewer       = closeViewer;
+window.connect           = connect;
+window.signOut           = signOut;
 </script>
+
 </body>
 </html>
