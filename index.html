@@ -284,6 +284,13 @@ header { display: flex; align-items: flex-start; justify-content: space-between;
 .pill-done  { background: rgba(52,211,153,.1); color: var(--done); }
 .pill-total { background: var(--surface3); color: var(--muted); }
 
+.cat-toggle-btn {
+  font-size: .75rem; padding: .1rem .3rem; border-radius: 5px;
+  background: none; border: 1px solid var(--border);
+  cursor: pointer; transition: all .15s; line-height: 1;
+}
+.cat-toggle-btn:hover { border-color: var(--accent2); transform: scale(1.1); }
+
 .btn-icon {
   width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
   background: transparent; color: var(--muted); border-radius: 7px; font-size: .82rem; flex-shrink: 0;
@@ -1216,13 +1223,23 @@ function selectCat(cat) {
 
 // ── Groups ────────────────────────────────────────────
 function addGroup() {
-  const inp = document.getElementById('newGroupInput');
+  const inp  = document.getElementById('newGroupInput');
   const name = inp.value.trim(); if (!name) return;
-  data.push({ id:uid(), name, category:selectedCat, open:true, tasks:[] });
+  const isDocBtn = document.getElementById('catDoc');
+  const cat = (isDocBtn && (isDocBtn.classList.contains('active-doc'))) ? 'document' : 'task';
+  alert('DEBUG: category = ' + cat + ' | catDoc classes = ' + isDocBtn.className);
+  data.push({ id:uid(), name, category:cat, open:true, tasks:[] });
   inp.value = ''; save();
 }
 function deleteGroup(gid) { if (!confirm('Delete this group?')) return; data = data.filter(g=>g.id!==gid); save(); }
 function toggleGroup(gid) { const g=data.find(g=>g.id===gid); if(g){g.open=!g.open;save();} }
+
+function toggleGroupCat(gid) {
+  const g = data.find(g=>g.id===gid);
+  if (!g) return;
+  g.category = g.category === 'document' ? 'task' : 'document';
+  save();
+}
 
 // ── Tasks ─────────────────────────────────────────────
 function addTask(gid) {
@@ -1505,6 +1522,7 @@ window.selectCat          = selectCat;
 window.addGroup           = addGroup;
 window.deleteGroup        = deleteGroup;
 window.toggleGroup        = toggleGroup;
+window.toggleGroupCat     = toggleGroupCat;
 window.addTask            = addTask;
 window.deleteTask         = deleteTask;
 window.toggleExpand       = toggleExpand;
