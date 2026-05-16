@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TaskFlow</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Personal Wallet</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -32,6 +35,134 @@ body {
   color: var(--text);
   min-height: 100vh;
   padding: 0;
+}
+
+/* ── PIN screen ── */
+#pinScreen {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg); padding: 1.5rem;
+}
+
+#pinScreen.hidden { display: none; }
+
+.pin-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  width: 100%; max-width: 320px;
+  display: flex; flex-direction: column; align-items: center; gap: 1.75rem;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(111,94,249,0.08);
+  animation: fadeUp .35s ease;
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.pin-logo {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.7rem; font-weight: 800; letter-spacing: -.04em;
+  background: linear-gradient(135deg, #fff 20%, var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  text-align: center;
+}
+
+.pin-logo-sub { font-size: .65rem; color: var(--muted); text-align: center; margin-top: .2rem; }
+
+.pin-label {
+  font-size: .72rem; color: var(--muted); text-align: center; line-height: 1.6;
+}
+
+/* PIN dot indicators */
+.pin-dots {
+  display: flex; gap: .65rem; align-items: center; justify-content: center;
+}
+
+.pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid #272a3d;
+  background: transparent;
+  transition: background .15s, border-color .15s, transform .15s;
+  display: inline-block;
+}
+
+.pin-dot.filled {
+  background: #6f5ef9;
+  border-color: #6f5ef9;
+  transform: scale(1.15);
+}
+
+.pin-dot.error {
+  background: #f87171;
+  border-color: #f87171;
+  animation: shake .35s ease;
+}
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-5px); }
+  40%     { transform: translateX(5px); }
+  60%     { transform: translateX(-5px); }
+  80%     { transform: translateX(3px); }
+}
+
+/* PIN numpad */
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .55rem;
+  width: 100%;
+}
+
+.pin-btn {
+  aspect-ratio: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-family: 'Syne', sans-serif;
+  font-size: 1.25rem; font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .1s, transform .1s, border-color .1s;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pin-btn:active, .pin-btn:hover { background: var(--surface3); border-color: var(--accent); transform: scale(.94); }
+
+.pin-btn.del { font-size: 1rem; color: var(--muted); }
+.pin-btn.del:hover { color: var(--danger); border-color: var(--danger); }
+.pin-btn.empty { background: transparent; border-color: transparent; cursor: default; pointer-events: none; }
+
+.pin-error-msg {
+  font-size: .7rem; color: var(--danger); text-align: center;
+  min-height: 1rem; transition: opacity .2s;
+}
+
+.pin-attempts {
+  font-size: .62rem; color: var(--muted); text-align: center;
+}
+
+/* User selector button */
+.user-btn {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .55rem .85rem; border-radius: 9px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-family: 'DM Mono', monospace;
+  font-size: .78rem; cursor: pointer; transition: all .15s;
+  width: 100%; text-align: left;
+}
+.user-btn:hover  { border-color: var(--accent); background: var(--surface3); }
+.user-btn.active { border-color: var(--accent); background: var(--accent-glow); color: var(--accent2); }
+.user-btn .u-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem; font-weight: 700; flex-shrink: 0;
+  font-family: 'Syne', sans-serif;
 }
 
 /* Ambient background */
@@ -236,7 +367,26 @@ header {
 .btn-signout:hover { border-color: var(--danger); color: var(--danger); }
 
 /* Add group */
-.add-group-bar { display: flex; gap: .5rem; margin-bottom: 1.5rem; }
+.add-group-bar { display:flex; gap:.5rem; margin-bottom:1.5rem; flex-wrap:wrap; align-items:center; }
+
+.cat-toggle { display:flex; gap:.3rem; flex-shrink:0; }
+
+.cat-btn {
+  font-family:'DM Mono',monospace; font-size:.7rem;
+  padding:.4rem .75rem; border-radius:7px;
+  background:var(--surface2); border:1px solid var(--border);
+  color:var(--muted); cursor:pointer; transition:all .15s; white-space:nowrap;
+}
+.cat-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.cat-btn:hover:not(.active) { border-color:var(--accent2); color:var(--accent2); }
+
+/* Category badge on group */
+.cat-badge {
+  font-size:.58rem; padding:.12rem .45rem; border-radius:999px;
+  border:1px solid; flex-shrink:0;
+}
+.cat-badge.task     { background:rgba(111,94,249,.12); color:#a78bfa; border-color:rgba(111,94,249,.3); }
+.cat-badge.document { background:rgba(34,211,238,.1);  color:#22d3ee; border-color:rgba(34,211,238,.3); }
 
 input[type="text"], textarea {
   background: var(--surface); border: 1px solid var(--border);
@@ -358,12 +508,104 @@ button { cursor: pointer; font-family: 'DM Mono', monospace; border: none; borde
 .detail-section { display:flex; flex-direction:column; gap:.35rem; }
 .detail-label { font-size:.6rem; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; }
 
-.task-notes {
-  width:100%; min-height:70px; resize:vertical; font-size:.76rem; line-height:1.65;
-  padding:.6rem .8rem; background:var(--surface2); border:1px solid var(--border);
-  border-radius:8px; color:var(--text);
+/* ── Comment system ── */
+.comments-list { display:flex; flex-direction:column; gap:.45rem; }
+
+.comment-item {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:8px; padding:.55rem .7rem;
+  display:flex; flex-direction:column; gap:.3rem;
+  animation:slideIn .15s ease;
 }
-.task-notes:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+
+.comment-header { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+.comment-dt { font-size:.58rem; color:var(--muted); white-space:nowrap; }
+.comment-actions { display:flex; gap:.2rem; }
+
+.comment-action-btn {
+  background:none; border:none; cursor:pointer;
+  font-size:.6rem; color:var(--muted); padding:.1rem .3rem;
+  border-radius:4px; transition:all .15s; font-family:'DM Mono',monospace;
+}
+.comment-action-btn:hover { color:var(--accent2); background:var(--surface3); }
+.comment-action-btn.del:hover { color:var(--danger); }
+
+.comment-body {
+  font-size:.75rem; line-height:1.6; color:var(--text);
+  white-space:pre-wrap; word-break:break-word;
+}
+
+.comment-edit-area {
+  width:100%; font-size:.75rem; line-height:1.55;
+  padding:.4rem .6rem; background:var(--surface);
+  border:1px solid var(--accent); border-radius:6px;
+  color:var(--text); font-family:'DM Mono',monospace;
+  resize:vertical; min-height:52px; outline:none;
+}
+
+.comment-edit-row { display:flex; gap:.35rem; justify-content:flex-end; margin-top:.25rem; }
+
+.btn-comment-save {
+  font-family:'DM Mono',monospace; font-size:.65rem;
+  padding:.25rem .65rem; border-radius:6px;
+  background:var(--accent); color:#fff; border:none; cursor:pointer;
+  transition:background .15s;
+}
+.btn-comment-save:hover { background:#5a4dd4; }
+
+.btn-comment-cancel {
+  font-family:'DM Mono',monospace; font-size:.65rem;
+  padding:.25rem .65rem; border-radius:6px;
+  background:var(--surface3); color:var(--muted);
+  border:1px solid var(--border); cursor:pointer; transition:all .15s;
+}
+.btn-comment-cancel:hover { color:var(--text); }
+
+.comment-input-wrap { display:flex; flex-direction:column; gap:.4rem; }
+
+.comment-textarea {
+  width:100%; font-size:.76rem; line-height:1.6;
+  padding:.6rem .8rem; background:var(--surface2);
+  border:1px solid var(--border); border-radius:8px;
+  color:var(--text); font-family:'DM Mono',monospace;
+  resize:vertical; min-height:64px; outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+.comment-textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+.comment-textarea::placeholder { color:var(--muted); }
+
+.comment-post-row { display:flex; justify-content:flex-end; }
+
+.btn-post {
+  font-family:'DM Mono',monospace; font-size:.72rem; font-weight:500;
+  padding:.4rem .9rem; border-radius:7px;
+  background:var(--accent); color:#fff; border:none; cursor:pointer;
+  transition:background .15s, transform .1s;
+  display:flex; align-items:center; gap:.4rem;
+  box-shadow:0 2px 10px rgba(111,94,249,.3);
+}
+.btn-post:hover { background:#5a4dd4; transform:translateY(-1px); }
+.btn-post:active { transform:translateY(0); }
+
+.no-comments { font-size:.7rem; color:var(--muted); text-align:center; padding:.5rem; font-style:italic; }
+
+/* Comment attachment chips */
+.comment-att-preview {
+  display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.3rem;
+}
+.comment-att-chip {
+  display:inline-flex; align-items:center; gap:.3rem;
+  background:var(--surface3); border:1px solid var(--border);
+  border-radius:6px; padding:.2rem .5rem; font-size:.65rem; color:var(--text);
+}
+.comment-att-attach-btn {
+  font-family:'DM Mono',monospace; font-size:.65rem;
+  padding:.25rem .55rem; border-radius:6px;
+  background:var(--surface3); border:1px solid var(--border);
+  color:var(--muted); cursor:pointer; transition:all .15s;
+  display:inline-flex; align-items:center; gap:.3rem;
+}
+.comment-att-attach-btn:hover { border-color:var(--accent); color:var(--accent2); }
 
 /* Attachments */
 .attach-grid { display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:.5rem; }
@@ -502,8 +744,47 @@ input[type="file"] { display:none; }
 </head>
 <body>
 
+<!-- PIN screen -->
+<div id="pinScreen">
+  <div class="pin-card">
+    <div>
+      <div class="pin-logo">Personal <span style="font-weight:400;opacity:.45">Wallet</span></div>
+      <div class="pin-logo-sub" id="pinLogoSub">enter your PIN to continue</div>
+    </div>
+
+    <!-- User selector (hidden when only 1 user) -->
+    <div id="userSelector" style="display:none;width:100%">
+      <div class="detail-label" style="margin-bottom:.4rem;font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Select user</div>
+      <div id="userList" style="display:flex;flex-direction:column;gap:.35rem;width:100%"></div>
+    </div>
+
+    <div class="pin-dots" id="pinDots">
+      <!-- dots built dynamically from PIN_LENGTH in config.js -->
+    </div>
+
+    <div class="pin-error-msg" id="pinErrorMsg"></div>
+
+    <div class="pin-pad">
+      <button class="pin-btn" onclick="pinPress('1')">1</button>
+      <button class="pin-btn" onclick="pinPress('2')">2</button>
+      <button class="pin-btn" onclick="pinPress('3')">3</button>
+      <button class="pin-btn" onclick="pinPress('4')">4</button>
+      <button class="pin-btn" onclick="pinPress('5')">5</button>
+      <button class="pin-btn" onclick="pinPress('6')">6</button>
+      <button class="pin-btn" onclick="pinPress('7')">7</button>
+      <button class="pin-btn" onclick="pinPress('8')">8</button>
+      <button class="pin-btn" onclick="pinPress('9')">9</button>
+      <button class="pin-btn empty"></button>
+      <button class="pin-btn" onclick="pinPress('0')">0</button>
+      <button class="pin-btn del" onclick="pinDelete()">⌫</button>
+    </div>
+
+    <div class="pin-attempts" id="pinAttempts"></div>
+  </div>
+</div>
+
 <!-- Loading screen -->
-<div id="loadingScreen">
+<div id="loadingScreen" style="display:none">
   <div class="spinner"></div>
   <div class="loading-label">Connecting…</div>
 </div>
@@ -576,7 +857,7 @@ input[type="file"] { display:none; }
 <div id="appScreen">
   <header>
     <div>
-      <div class="wordmark-sm">Task<span>Flow</span></div>
+      <div class="wordmark-sm">Personal <span>Wallet</span></div>
       <div class="header-sub" id="repoLabel"></div>
     </div>
     <div class="header-right">
@@ -592,8 +873,12 @@ input[type="file"] { display:none; }
   </header>
 
   <div class="add-group-bar">
-    <input type="text" id="newGroupInput" placeholder="New group name…" maxlength="60">
-    <button class="btn-primary" onclick="addGroup()">+ Add Group</button>
+    <input type="text" id="newGroupInput" placeholder="Group name…" maxlength="60">
+    <div class="cat-toggle" id="catToggle">
+      <button class="cat-btn active" id="catTask" onclick="selectCat('task')">📋 Task</button>
+      <button class="cat-btn" id="catDoc" onclick="selectCat('document')">📁 Document</button>
+    </div>
+    <button class="btn-primary" onclick="addGroup()">+ Add</button>
   </div>
 
   <div class="groups" id="groupsContainer"></div>
@@ -607,19 +892,32 @@ input[type="file"] { display:none; }
 
 <div id="statusPortal"></div>
 <input type="file" id="fileInput" multiple>
+<input type="file" id="commentFileInput" multiple>
 <div id="toast"></div>
 
+<!-- ═══════════════════════════════════════════
+     CONFIG — edit this block to change PIN
+     To get a PIN hash:
+     1. Go to https://emn178.github.io/online-tools/sha256.html
+     2. Type your 6-digit PIN → copy the hash
+     3. Replace pinHash value below
+     4. Commit and push — done!
+════════════════════════════════════════════ -->
+<script src="config.js"></script>
 <script>
 'use strict';
 
-// ── Config keys ───────────────────────────────────────
-const LS_TOKEN  = 'tf_gh_token';
-const LS_USER   = 'tf_gh_user';
-const LS_REPO   = 'tf_gh_repo';
-const LS_DATA   = 'tf_data_cache';
-const LS_SHAS   = 'tf_shas';       // file SHA cache for updates
-const DATA_PATH = 'taskflow-data.json';
-const ATT_DIR   = 'attachments';
+// ── All constants ─────────────────────────────
+const LS_AUTH    = 'tf_authed';
+let   isAuthed   = false; // resets on every page load/refresh
+const LS_TOKEN   = 'tf_gh_token';
+const LS_USER    = 'tf_gh_user';
+const LS_REPO    = 'tf_gh_repo';
+const LS_DATA    = 'tf_data_cache';
+const LS_SHAS    = 'tf_shas';
+const DATA_PATH  = 'taskflow-data.json';
+const ATT_DIR    = 'attachments';
+const LOCKOUT_MS = (window.APP_CONFIG.LOCKOUT_MINUTES || 5) * 60 * 1000;
 
 const STATUSES = [
   { key:'todo',     label:'To Do',       color:'#5a5d7a' },
@@ -633,16 +931,336 @@ let data          = [];
 let ghToken       = '';
 let ghUser        = '';
 let ghRepo        = '';
-let shas          = {};   // path → sha (needed for GitHub file updates)
+let shas          = {};
 let saveTimer     = null;
 let openDropdown  = null;
 let pendingUpload = null;
+let selectedUser  = null;
+let pinEntry      = '';
+let pinFailed     = 0;
+let pinLocked     = false;
 
-const portal    = document.getElementById('statusPortal');
-const fileInput = document.getElementById('fileInput');
+async function sha256(str) {
+  // Try modern crypto.subtle first (browsers)
+  if (window.crypto && window.crypto.subtle) {
+    try {
+      const buf = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+    } catch(e) {}
+  }
+  // Fallback: pure JS SHA-256 for environments like MIT App Inventor WebView
+  return sha256Fallback(str);
+}
+
+// Pure JavaScript SHA-256 — works everywhere including old WebViews
+function sha256Fallback(str) {
+  function rightRotate(value, amount) {
+    return (value >>> amount) | (value << (32 - amount));
+  }
+  const mathPow = Math.pow;
+  const maxWord  = mathPow(2, 32);
+  let result = '';
+  const words = [];
+  const asciiBitLength = str.length * 8;
+
+  let hash = [], k = [];
+  let primeCounter = 0;
+  const isComposite = {};
+  for (let candidate = 2; primeCounter < 64; candidate++) {
+    if (!isComposite[candidate]) {
+      for (let i = candidate * candidate; i < 313; i += candidate) {
+        isComposite[i] = true;
+      }
+      hash[primeCounter] = (mathPow(candidate, .5) * maxWord) | 0;
+      k[primeCounter++]  = (mathPow(candidate, 1/3) * maxWord) | 0;
+    }
+  }
+
+  str += '\x80';
+  while (str.length % 64 - 56) str += '\x00';
+
+  for (let i = 0; i < str.length; i++) {
+    const j = str.charCodeAt(i);
+    if (j >> 8) return ''; // non-ASCII
+    words[i >> 2] |= j << ((3 - i) % 4) * 8;
+  }
+  words[words.length] = ((asciiBitLength / maxWord) | 0);
+  words[words.length] = (asciiBitLength | 0);
+
+  for (let j = 0; j < words.length;) {
+    const w = words.slice(j, j += 16);
+    const oldHash = hash.slice(0);
+    for (let i = 0; i < 64; i++) {
+      const w15 = w[i - 15], w2 = w[i - 2];
+      const a = hash[0], e = hash[4];
+      const temp1 = hash[7]
+        + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))
+        + ((e & hash[5]) ^ (~e & hash[6]))
+        + k[i]
+        + (w[i] = (i < 16) ? w[i] : (
+            w[i - 16]
+            + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3))
+            + w[i - 7]
+            + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))
+          ) | 0);
+      const temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22))
+        + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+      hash = [(temp1 + temp2) | 0].concat(hash);
+      hash[4] = (hash[4] + temp1) | 0;
+      hash.length = 8;
+    }
+    hash = hash.map((a, i) => (a + oldHash[i]) | 0);
+  }
+  hash.forEach(val => {
+    for (let i = 7; i >= 0; i--) {
+      result += ((val >>> (i * 4)) & 0xF).toString(16);
+    }
+  });
+  return result;
+}
+
+// ── Build user selector on load ───────────────────────
+function buildUserSelector() {
+  const cfg   = window.window.APP_CONFIG;
+  const users = cfg.users || [];
+  const pinLen = cfg.PIN_LENGTH || 6;
+
+  // Build dots dynamically based on PIN_LENGTH
+  const dotsEl = document.getElementById('pinDots');
+  dotsEl.innerHTML = Array.from({length: pinLen}, (_, i) =>
+    `<div class="pin-dot" id="pd${i}"></div>`
+  ).join('');
+
+  if (users.length === 1) {
+    // Only one user — auto-select, hide selector
+    selectedUser = users[0];
+    document.getElementById('pinLogoSub').textContent =
+      `Hello ${selectedUser.username} — enter your PIN`;
+    return;
+  }
+
+  // Multiple users — show selector
+  document.getElementById('userSelector').style.display = 'block';
+  document.getElementById('pinLogoSub').textContent = 'Select user and enter PIN';
+
+  const list = document.getElementById('userList');
+  list.innerHTML = users.map((u, i) => `
+    <button class="user-btn" id="ubtn-${i}" onclick="selectUser(${i})">
+      <div class="u-avatar">${u.username.charAt(0).toUpperCase()}</div>
+      ${u.username}
+    </button>`).join('');
+
+  // Auto-select first user
+  selectUser(0);
+}
+
+function selectUser(index) {
+  const users = window.APP_CONFIG.users || [];
+  selectedUser = users[index];
+
+  // Update active state
+  users.forEach((_, i) => {
+    const btn = document.getElementById('ubtn-' + i);
+    if (btn) btn.classList.toggle('active', i === index);
+  });
+
+  // Reset pin entry when switching users
+  pinEntry = '';
+  updatePinDots();
+  clearPinError();
+  document.getElementById('pinLogoSub').textContent =
+    `Hello ${selectedUser.username} — enter your PIN`;
+}
+
+function pinPress(digit) {
+  const pinLen = (window.window.APP_CONFIG.PIN_LENGTH || 6);
+  if (pinLocked || pinEntry.length >= pinLen) return;
+  pinEntry += digit;
+  updatePinDots();
+  if (pinEntry.length === pinLen) setTimeout(checkPin, 120);
+}
+
+function pinDelete() {
+  if (pinLocked) return;
+  pinEntry = pinEntry.slice(0, -1);
+  updatePinDots();
+  clearPinError();
+}
+
+function updatePinDots() {
+  const pinLen = window.window.APP_CONFIG.PIN_LENGTH || 6;
+  for (let i = 0; i < pinLen; i++) {
+    const dot = document.getElementById('pd' + i);
+    if (!dot) continue;
+    dot.classList.toggle('filled', i < pinEntry.length);
+    dot.classList.remove('error');
+  }
+}
+
+async function checkPin() {
+  if (!selectedUser) { pinEntry = ''; return; }
+  const hash = await sha256(pinEntry);
+
+  if (hash === selectedUser.pinHash) {
+    isAuthed = true;
+    pinFailed = 0;
+    document.getElementById('pinScreen').classList.add('hidden');
+    bootApp();
+  } else {
+    pinFailed++;
+    pinEntry = '';
+    showPinError(pinFailed);
+    const pinLen = window.window.APP_CONFIG.PIN_LENGTH || 6;
+    for (let i = 0; i < pinLen; i++) {
+      const dot = document.getElementById('pd' + i);
+      if (!dot) continue;
+      dot.classList.remove('filled');
+      dot.classList.add('error');
+    }
+    setTimeout(() => {
+      for (let i = 0; i < pinLen; i++) {
+        const dot = document.getElementById('pd' + i);
+        if (dot) dot.classList.remove('error');
+      }
+    }, 400);
+    if (pinFailed >= window.APP_CONFIG.MAX_ATTEMPTS) lockout();
+  }
+}
+
+function showPinError(attempts) {
+  const remaining = window.APP_CONFIG.MAX_ATTEMPTS - attempts;
+  const msg = document.getElementById('pinErrorMsg');
+  msg.textContent = remaining > 0
+    ? `Incorrect PIN — ${remaining} attempt${remaining !== 1 ? 's' : ''} left`
+    : '';
+}
+
+function clearPinError() {
+  document.getElementById('pinErrorMsg').textContent = '';
+}
+
+function lockout() {
+  pinLocked = true;
+  const until = Date.now() + LOCKOUT_MS;
+  localStorage.setItem('tf_lockout', until);
+  const msg = document.getElementById('pinErrorMsg');
+  msg.textContent = `Too many attempts — locked for ${window.APP_CONFIG.LOCKOUT_MINUTES} min`;
+  document.querySelectorAll('.pin-btn').forEach(b => {
+    b.style.opacity = '.3'; b.style.pointerEvents = 'none';
+  });
+  const interval = setInterval(() => {
+    const remaining = Math.ceil((until - Date.now()) / 1000);
+    if (remaining <= 0) {
+      clearInterval(interval);
+      pinLocked = false; pinFailed = 0;
+      localStorage.removeItem('tf_lockout');
+      msg.textContent = '';
+      document.querySelectorAll('.pin-btn').forEach(b => {
+        b.style.opacity = ''; b.style.pointerEvents = '';
+      });
+      document.getElementById('pinAttempts').textContent = '';
+    } else {
+      document.getElementById('pinAttempts').textContent =
+        `Try again in ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
+    }
+  }, 1000);
+}
+
+document.addEventListener('keydown', e => {
+  if (document.getElementById('pinScreen').classList.contains('hidden')) return;
+  if (e.key >= '0' && e.key <= '9') pinPress(e.key);
+  if (e.key === 'Backspace') pinDelete();
+});
+
+// ── Init auth ─────────────────────────────────────────
+function initAuth() {
+  // Check lockout
+  const lockUntil = parseInt(localStorage.getItem('tf_lockout') || '0');
+  if (lockUntil > Date.now()) {
+    pinLocked = true;
+    const msg = document.getElementById('pinErrorMsg');
+    msg.textContent = 'Too many attempts — locked';
+    document.querySelectorAll('.pin-btn').forEach(b => {
+      b.style.opacity = '.3'; b.style.pointerEvents = 'none';
+    });
+    const interval = setInterval(() => {
+      const remaining = Math.ceil((lockUntil - Date.now()) / 1000);
+      if (remaining <= 0) {
+        clearInterval(interval);
+        pinLocked = false;
+        localStorage.removeItem('tf_lockout');
+        msg.textContent = '';
+        document.querySelectorAll('.pin-btn').forEach(b => {
+          b.style.opacity = ''; b.style.pointerEvents = '';
+        });
+        document.getElementById('pinAttempts').textContent = '';
+      } else {
+        document.getElementById('pinAttempts').textContent =
+          `Try again in ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
+      }
+    }, 1000);
+  }
+
+  // Build user selector
+  buildUserSelector();
+
+  // isAuthed is always false on fresh load/refresh — always show PIN
+  if (isAuthed) {
+    document.getElementById('pinScreen').classList.add('hidden');
+    bootApp();
+    return;
+  }
+}
 
 // ── Boot ──────────────────────────────────────────────
-window.addEventListener('load', async () => {
+window.addEventListener('load', () => { initAuth(); });
+
+// rename old boot to bootApp
+async function bootApp() {
+  // DOM is ready here
+  window.portal    = document.getElementById('statusPortal');
+  window.fileInput = document.getElementById('fileInput');
+  fileInput.addEventListener('change', handleFileUpload);
+
+  // Comment attachment handler
+  window._commentAtts = {};
+  const cfi = document.getElementById('commentFileInput');
+  if (cfi) {
+    cfi.addEventListener('change', async () => {
+      const tid   = window._commentAttachTid;
+      if (!tid) return;
+      const files = Array.from(cfi.files);
+      if (!files.length) return;
+      if (!window._commentAtts[tid]) window._commentAtts[tid] = [];
+
+      for (const file of files) {
+        try {
+          const dataUrl = await readFileAsDataURL(file);
+          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+          const ghPath   = `${ATT_DIR}/c_${tid}_${uid()}_${safeName}`;
+          toast(`⬆️ Uploading ${file.name}…`);
+          const downloadUrl = await uploadAttachmentToGitHub(ghPath, dataUrl);
+          window._commentAtts[tid].push({
+            id: uid(), name: file.name, type: file.type,
+            url: downloadUrl, path: ghPath
+          });
+          // Update preview
+          const preview = document.getElementById('cap-' + tid);
+          if (preview) {
+            preview.innerHTML = window._commentAtts[tid].map(a =>
+              `<span class="comment-att-chip">
+                ${fileIcon(a.type)} ${esc(a.name)}
+                <button onclick="removeCommentAtt('${tid}','${a.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.65rem;padding:0 .2rem">✕</button>
+              </span>`
+            ).join('');
+          }
+          toast('✅ Attached');
+        } catch(e) {
+          toast('⚠️ ' + e.message);
+        }
+      }
+    });
+  }
   ghToken = localStorage.getItem(LS_TOKEN) || '';
   ghUser  = localStorage.getItem(LS_USER)  || '';
   ghRepo  = localStorage.getItem(LS_REPO)  || '';
@@ -651,22 +1269,30 @@ window.addEventListener('load', async () => {
   try { data = JSON.parse(localStorage.getItem(LS_DATA) || '[]'); } catch { data = []; }
 
   if (ghToken && ghUser && ghRepo) {
-    // Try silent connect
+    showLoading();
     const ok = await silentConnect();
     if (ok) { showApp(); return; }
   }
 
   hideLoading();
   showSetup();
-});
+}
+
 
 async function silentConnect() {
   try {
-    // Verify token works by fetching repo info
-    const res = await ghFetch(`https://api.github.com/repos/${ghUser}/${ghRepo}`);
+    // 8 second timeout so it never hangs forever
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+
+    const res = await ghFetch(
+      `https://api.github.com/repos/${ghUser}/${ghRepo}`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timer);
+
     if (!res.ok) return false;
 
-    // Load fresh data from GitHub (may differ from cache)
     await loadFromGitHub();
     return true;
   } catch {
@@ -926,15 +1552,32 @@ function openViewer(url, name, type) {
   inner.innerHTML = '';
 
   let content = '';
+
   if (type && type.startsWith('image/')) {
-    content = `<img src="${esc(url)}" alt="${esc(name)}">`;
+    // Images load directly
+    content = `<img src="${esc(url)}" alt="${esc(name)}" style="max-width:88vw;max-height:82vh;border-radius:8px;object-fit:contain;box-shadow:0 0 60px rgba(0,0,0,.7)">`;
+
   } else if (type === 'application/pdf') {
-    content = `<iframe src="${esc(url)}"></iframe>`;
+    // PDF via Google Docs viewer (avoids CORS/download issues)
+    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+    content = `<iframe src="${esc(viewerUrl)}" style="width:85vw;height:82vh;border:none;border-radius:8px;background:#fff"></iframe>`;
+
+  } else if (type && (type.includes('word') || type.includes('document') || type.includes('sheet') || type.includes('excel') || type.includes('presentation') || type.includes('powerpoint'))) {
+    // Office docs via Google Docs viewer
+    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+    content = `<iframe src="${esc(viewerUrl)}" style="width:85vw;height:82vh;border:none;border-radius:8px;background:#fff"></iframe>`;
+
+  } else if (type && type.startsWith('video/')) {
+    content = `<video src="${esc(url)}" controls style="max-width:88vw;max-height:82vh;border-radius:8px"></video>`;
+
+  } else if (type && type.startsWith('audio/')) {
+    content = `<audio src="${esc(url)}" controls style="width:320px;margin:2rem 0"></audio>`;
+
   } else {
     content = `<div class="no-preview">
       <div class="big-icon">${fileIcon(type)}</div>
       <div class="np-name">${esc(name)}</div>
-      <div class="np-hint">No preview available — click below to open</div>
+      <div class="np-hint">No preview available for this file type</div>
     </div>`;
   }
 
@@ -987,10 +1630,18 @@ function fileIcon(t) {
 }
 
 // ── Groups ────────────────────────────────────────────
+let selectedCat = 'task'; // default category
+
+function selectCat(cat) {
+  selectedCat = cat;
+  document.getElementById('catTask').classList.toggle('active', cat === 'task');
+  document.getElementById('catDoc').classList.toggle('active', cat === 'document');
+}
+
 function addGroup() {
   const inp = document.getElementById('newGroupInput');
   const name = inp.value.trim(); if (!name) return;
-  data.push({ id:uid(), name, open:true, tasks:[] });
+  data.push({ id:uid(), name, category: selectedCat, open:true, tasks:[] });
   inp.value = ''; save();
 }
 
@@ -1024,8 +1675,113 @@ function toggleExpand(gid, tid) {
   t.expanded = !t.expanded; save();
 }
 
-function saveNotes(gid, tid, val) {
-  data.find(g=>g.id===gid).tasks.find(t=>t.id===tid).notes = val; save();
+// ── Comments ──────────────────────────────────────────
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function formatDT() {
+  const d = new Date();
+  const day   = String(d.getDate()).padStart(2,'0');
+  const mon   = MONTHS[d.getMonth()];
+  const year  = d.getFullYear();
+  const hh    = String(d.getHours()).padStart(2,'0');
+  const mm    = String(d.getMinutes()).padStart(2,'0');
+  return `${day} ${mon} ${year} · ${hh}:${mm}`;
+}
+
+function postComment(gid, tid) {
+  const ta   = document.getElementById('ct-' + tid);
+  const text = ta ? ta.value.trim() : '';
+  const pendingAtts = window._commentAtts && window._commentAtts[tid] || [];
+
+  if (!text && pendingAtts.length === 0) return;
+
+  const t = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
+  if (!t.comments) t.comments = [];
+
+  t.comments.push({
+    id: uid(),
+    text,
+    dt: formatDT(),
+    attachments: pendingAtts
+  });
+
+  if (ta) ta.value = '';
+  // Clear pending attachments
+  if (window._commentAtts) window._commentAtts[tid] = [];
+  // Clear preview area
+  const preview = document.getElementById('cap-' + tid);
+  if (preview) preview.innerHTML = '';
+
+  save();
+}
+
+function triggerCommentAttach(tid) {
+  window._commentAttachTid = tid;
+  const fi = document.getElementById('commentFileInput');
+  if (fi) { fi.value = ''; fi.click(); }
+}
+
+function removeCommentAtt(tid, aid) {
+  if (window._commentAtts && window._commentAtts[tid]) {
+    window._commentAtts[tid] = window._commentAtts[tid].filter(a => a.id !== aid);
+    const preview = document.getElementById('cap-' + tid);
+    if (preview) {
+      preview.innerHTML = (window._commentAtts[tid]||[]).map(a =>
+        `<span class="comment-att-chip">
+          ${fileIcon(a.type)} ${esc(a.name)}
+          <button onclick="removeCommentAtt('${tid}','${a.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.65rem;padding:0 .2rem">✕</button>
+        </span>`
+      ).join('');
+    }
+  }
+}
+
+function deleteComment(gid, tid, cid) {
+  const t = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
+  t.comments = (t.comments||[]).filter(c=>c.id!==cid);
+  save();
+}
+
+function editComment(gid, tid, cid) {
+  const t = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
+  const c = (t.comments||[]).find(c=>c.id===cid);
+  if (!c) return;
+
+  const item = document.getElementById('ci-' + cid);
+  if (!item) return;
+
+  // Replace body with edit textarea inline
+  item.innerHTML = `
+    <div class="comment-header">
+      <span class="comment-dt">${esc(c.dt)}</span>
+    </div>
+    <textarea class="comment-edit-area" id="ea-${cid}">${esc(c.text)}</textarea>
+    <div class="comment-edit-row">
+      <button class="btn-comment-cancel" onclick="cancelEdit('${gid}','${tid}','${cid}')">Cancel</button>
+      <button class="btn-comment-save" onclick="saveEdit('${gid}','${tid}','${cid}')">Save</button>
+    </div>`;
+
+  const ea = document.getElementById('ea-' + cid);
+  if (ea) { ea.focus(); ea.setSelectionRange(ea.value.length, ea.value.length); }
+}
+
+function saveEdit(gid, tid, cid) {
+  const ea   = document.getElementById('ea-' + cid);
+  const text = ea ? ea.value.trim() : '';
+  if (!text) return;
+
+  const t = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
+  const c = (t.comments||[]).find(c=>c.id===cid);
+  if (c) {
+    c.text = text;
+    c.dt   = c.dt + ' (edited)';
+  }
+  save();
+}
+
+function cancelEdit(gid, tid, cid) {
+  // Just re-render to restore original
+  save();
 }
 
 // ── Status ────────────────────────────────────────────
@@ -1061,7 +1817,7 @@ function triggerAttach(gid, tid) {
   pendingUpload = {gid, tid}; fileInput.value = ''; fileInput.click();
 }
 
-fileInput.addEventListener('change', async () => {
+async function handleFileUpload() {
   if (!pendingUpload) return;
   const {gid, tid} = pendingUpload;
   const t = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
@@ -1096,7 +1852,7 @@ fileInput.addEventListener('change', async () => {
 
   save();
   toast('✅ Uploaded successfully');
-});
+}
 
 function readFileAsDataURL(file) {
   return new Promise((res, rej) => {
@@ -1137,18 +1893,23 @@ function render() {
   const chevU = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>`;
 
   container.innerHTML = data.map(g => {
-    const dc  = g.tasks.filter(t=>t.status==='done').length;
-    const tot = g.tasks.length;
-    const pct = tot===0 ? 0 : Math.round(dc/tot*100);
+    const isDoc  = g.category === 'document';
+    const dc     = isDoc ? 0 : g.tasks.filter(t=>t.status==='done').length;
+    const tot    = g.tasks.length;
+    const pct    = (!isDoc && tot > 0) ? Math.round(dc/tot*100) : 0;
+    const catLabel = isDoc ? '📁 Document' : '📋 Task';
+    const catClass = isDoc ? 'document' : 'task';
 
     const tasksHtml = tot===0
-      ? `<div class="empty-tasks">No tasks yet — add one below</div>`
+      ? `<div class="empty-tasks">No items yet — add one below</div>`
       : g.tasks.map(t => {
           const st   = STATUSES.find(s=>s.key===t.status) || STATUSES[0];
           const atts = t.attachments || [];
 
+          // Task-level attachments (now only shown in comments, but kept for legacy)
           const attachItems = atts.map(a => {
-            if (a.type && a.type.startsWith('image/')) return `
+            const isImg = a.type && a.type.startsWith('image/');
+            if (isImg) return `
               <div class="attach-img"
                 data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
                 onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">
@@ -1166,31 +1927,77 @@ function render() {
               </div>`;
           }).join('');
 
+          // Render comments with their attachments
+          const commentsHtml = (t.comments||[]).length === 0
+            ? `<div class="no-comments">No comments yet</div>`
+            : (t.comments||[]).map(c => {
+                const cAtts = (c.attachments||[]).map(a => {
+                  const isImg = a.type && a.type.startsWith('image/');
+                  if (isImg) return `
+                    <div class="attach-img" style="width:56px;height:56px"
+                      data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
+                      onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">
+                      <img src="${esc(a.url)}" alt="${esc(a.name)}" loading="lazy">
+                      <div class="img-overlay">🔍</div>
+                    </div>`;
+                  return `
+                    <div class="attach-file"
+                      data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
+                      onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">
+                      <span class="file-icon">${fileIcon(a.type)}</span>
+                      <span class="file-name">${esc(a.name)}</span>
+                    </div>`;
+                }).join('');
+
+                return `
+                <div class="comment-item" id="ci-${c.id}">
+                  <div class="comment-header">
+                    <span class="comment-dt">${esc(c.dt)}</span>
+                    <div class="comment-actions">
+                      <button class="comment-action-btn" onclick="editComment('${g.id}','${t.id}','${c.id}')">✏️ edit</button>
+                      <button class="comment-action-btn del" onclick="deleteComment('${g.id}','${t.id}','${c.id}')">✕</button>
+                    </div>
+                  </div>
+                  ${c.text ? `<div class="comment-body">${esc(c.text)}</div>` : ''}
+                  ${cAtts ? `<div class="attach-grid" style="margin-top:.35rem">${cAtts}</div>` : ''}
+                </div>`;
+              }).join('');
+
           return `
-          <div class="task-wrap ${t.status==='done'?'done':''} ${t.expanded?'expanded':''}">
+          <div class="task-wrap ${(!isDoc && t.status==='done')?'done':''} ${t.expanded?'expanded':''}">
             <div class="task">
               <button class="btn-icon neutral" onclick="toggleExpand('${g.id}','${t.id}')">${t.expanded?chevU:chevD}</button>
               <span class="task-name">${esc(t.name)}</span>
               ${atts.length ? `<span class="attach-badge">📎 ${atts.length}</span>` : ''}
+              ${!isDoc ? `
               <button class="status-btn" data-status="${t.status}" onclick="openStatusDropdown(event,'${g.id}','${t.id}')">
                 <span class="status-dot"></span>${st.label}
-              </button>
+              </button>` : ''}
               <button class="btn-icon" onclick="deleteTask('${g.id}','${t.id}')" title="Delete">✕</button>
             </div>
             <div class="task-detail">
               <div class="detail-section">
-                <div class="detail-label">📝 &nbsp;Notes</div>
-                <textarea class="task-notes" placeholder="Add notes, links, context…"
-                  oninput="saveNotes('${g.id}','${t.id}',this.value)">${esc(t.notes||'')}</textarea>
-              </div>
-              <div class="detail-section">
-                <div class="detail-label">📎 &nbsp;Attachments <span style="font-size:.58rem;text-transform:none;letter-spacing:0;color:var(--muted)">(click to preview)</span></div>
-                ${atts.length ? `<div class="attach-grid">${attachItems}</div>` : ''}
-                <div class="attach-drop" onclick="triggerAttach('${g.id}','${t.id}')">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-                  Click to attach — files upload directly to your GitHub repo
+                <div class="detail-label">💬 &nbsp;Comments</div>
+                <div class="comments-list" id="cl-${t.id}">${commentsHtml}</div>
+                <div class="comment-input-wrap">
+                  <textarea class="comment-textarea" id="ct-${t.id}" placeholder="Write a comment…" rows="2"></textarea>
+                  <div id="cap-${t.id}" class="comment-att-preview"></div>
+                  <div class="comment-post-row" style="display:flex;justify-content:space-between;align-items:center">
+                    <button class="comment-att-attach-btn" onclick="triggerCommentAttach('${t.id}')">
+                      📎 Attach
+                    </button>
+                    <button class="btn-post" onclick="postComment('${g.id}','${t.id}')">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                      Post
+                    </button>
+                  </div>
                 </div>
               </div>
+              ${atts.length ? `
+              <div class="detail-section">
+                <div class="detail-label">📎 &nbsp;Legacy Attachments</div>
+                <div class="attach-grid">${attachItems}</div>
+              </div>` : ''}
             </div>
           </div>`;
         }).join('');
@@ -1201,16 +2008,17 @@ function render() {
         <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         <span class="group-name">${esc(g.name)}</span>
         <div class="group-meta">
-          <span class="pill pill-done">${dc} done</span>
+          <span class="cat-badge ${catClass}">${catLabel}</span>
+          ${!isDoc ? `<span class="pill pill-done">${dc} done</span>` : ''}
           <span class="pill pill-total">${tot} total</span>
         </div>
         <button class="btn-icon" onclick="event.stopPropagation();deleteGroup('${g.id}')" title="Delete group">✕</button>
       </div>
-      <div class="group-progress"><div class="group-progress-fill" style="width:${pct}%"></div></div>
+      ${!isDoc ? `<div class="group-progress"><div class="group-progress-fill" style="width:${pct}%"></div></div>` : ''}
       <div class="group-body">
         <div class="tasks">${tasksHtml}</div>
         <div class="add-task-row">
-          <input type="text" id="task-input-${g.id}" placeholder="Add a task…" maxlength="120"
+          <input type="text" id="task-input-${g.id}" placeholder="Add ${isDoc ? 'document' : 'task'}…" maxlength="120"
             onkeydown="if(event.key==='Enter') addTask('${g.id}')">
           <button class="btn-sm" onclick="addTask('${g.id}')">Add</button>
         </div>
@@ -1222,6 +2030,35 @@ function render() {
 document.getElementById('newGroupInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') addGroup();
 });
+
+// ── Expose functions to global scope for onclick handlers ──
+// Required because 'use strict' prevents auto-global attachment
+window.pinPress           = pinPress;
+window.pinDelete          = pinDelete;
+window.selectUser         = selectUser;
+window.selectCat          = selectCat;
+window.addGroup           = addGroup;
+window.deleteGroup        = deleteGroup;
+window.toggleGroup        = toggleGroup;
+window.addTask            = addTask;
+window.deleteTask         = deleteTask;
+window.toggleExpand       = toggleExpand;
+window.postComment        = postComment;
+window.deleteComment      = deleteComment;
+window.editComment        = editComment;
+window.saveEdit           = saveEdit;
+window.cancelEdit         = cancelEdit;
+window.triggerCommentAttach = triggerCommentAttach;
+window.removeCommentAtt   = removeCommentAtt;
+window.setStatus          = setStatus;
+window.openStatusDropdown = openStatusDropdown;
+window.triggerAttach      = triggerAttach;
+window.deleteAttachment   = deleteAttachment;
+window.openViewer         = openViewer;
+window.closeViewer        = closeViewer;
+window.connect            = connect;
+window.signOut            = signOut;
 </script>
+
 </body>
 </html>
