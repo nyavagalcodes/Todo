@@ -64,6 +64,8 @@ body::before {
 .pin-logo {
   font-family: 'Syne', sans-serif; font-size: 1.7rem; font-weight: 800;
   letter-spacing: -.04em; text-align: center;
+  display: flex; align-items: baseline; gap: .3rem; justify-content: center;
+  flex-wrap: nowrap; white-space: nowrap;
 }
 .pin-logo .w1 { color: #fff; }
 .pin-logo .w2 { color: var(--accent2); font-weight: 400; }
@@ -194,7 +196,14 @@ header { display: flex; align-items: flex-start; justify-content: space-between;
 .wordmark-sm .w2 { color: var(--accent2); font-weight: 400; }
 .header-sub { font-size: .65rem; color: var(--muted); margin-top: .2rem; }
 
-.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: .45rem; }
+.header-right {
+  display: flex; flex-direction: column; align-items: flex-end; gap: .45rem;
+  flex-shrink: 0;
+}
+
+.header-controls {
+  display: flex; align-items: center; gap: .5rem;
+}
 .stats { font-size: .67rem; color: var(--muted); text-align: right; line-height: 1.9; }
 .stats strong { color: var(--accent2); }
 
@@ -240,13 +249,17 @@ header { display: flex; align-items: flex-start; justify-content: space-between;
 /* Groups */
 .groups { display: flex; flex-direction: column; gap: .75rem; }
 
-/* Task group = default purple accent */
+/* Task group = purple left accent */
 .group {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 13px; animation: slideIn .2s ease;
+  border-left: 3px solid rgba(111,94,249,.5);
 }
-/* Document group = teal accent */
-.group.doc-group { border-color: rgba(34,211,238,.2); }
+/* Document group = teal left accent */
+.group.doc-group {
+  border-color: var(--border);
+  border-left: 3px solid rgba(34,211,238,.5);
+}
 .group.doc-group .group-header:hover { background: rgba(34,211,238,.04); }
 
 @keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
@@ -372,8 +385,12 @@ header { display: flex; align-items: flex-start; justify-content: space-between;
 
 /* Comment input area */
 .comment-input-wrap { display: flex; flex-direction: column; gap: .4rem; }
+
+.comment-textarea-wrap { position: relative; }
+
 .comment-textarea {
   width: 100%; font-size: .76rem; line-height: 1.6; padding: .6rem .8rem;
+  padding-right: 2.4rem;
   background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
   color: var(--text); font-family: 'DM Mono', monospace; resize: vertical; min-height: 64px; outline: none;
   transition: border-color .2s;
@@ -381,15 +398,19 @@ header { display: flex; align-items: flex-start; justify-content: space-between;
 .comment-textarea:focus { border-color: var(--accent); }
 .comment-textarea::placeholder { color: var(--muted); }
 
-.comment-post-row { display: flex; align-items: center; justify-content: space-between; }
-
-.btn-attach-comment {
-  display: flex; align-items: center; gap: .3rem; font-family: 'DM Mono', monospace;
-  font-size: .68rem; padding: .35rem .7rem; border-radius: 7px;
+/* Attach icon sits inside the textarea top-right */
+.btn-attach-inside {
+  position: absolute; top: .45rem; right: .45rem;
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
   background: var(--surface3); border: 1px solid var(--border);
-  color: var(--muted); cursor: pointer; transition: all .15s;
+  border-radius: 6px; cursor: pointer; font-size: .85rem;
+  transition: border-color .15s, background .15s;
+  line-height: 1;
 }
-.btn-attach-comment:hover { border-color: var(--accent2); color: var(--accent2); }
+.btn-attach-inside:hover { border-color: var(--accent2); background: var(--accent-glow); }
+
+.comment-post-row { display: flex; align-items: center; justify-content: flex-end; }
 
 .btn-post {
   display: flex; align-items: center; gap: .4rem; font-family: 'DM Mono', monospace;
@@ -627,7 +648,7 @@ input[type="file"] { display: none; }
       <div class="header-sub" id="repoLabel"></div>
     </div>
     <div class="header-right">
-      <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;justify-content:flex-end">
+      <div class="header-controls">
         <div class="sync-pill" id="syncPill"><span class="s-dot"></span><span id="syncLabel">Connecting…</span></div>
         <button class="btn-signout" onclick="signOut()">disconnect</button>
       </div>
@@ -1425,10 +1446,12 @@ function render() {
                 <div class="detail-label">💬 Comments</div>
                 <div class="comments-list" id="cl-${t.id}">${commentsHtml}</div>
                 <div class="comment-input-wrap">
-                  <textarea class="comment-textarea" id="ct-${t.id}" placeholder="Write a comment…" rows="2"></textarea>
+                  <div class="comment-textarea-wrap">
+                    <textarea class="comment-textarea" id="ct-${t.id}" placeholder="Write a comment…" rows="2"></textarea>
+                    <button class="btn-attach-inside" onclick="triggerCommentAttach('${t.id}')" title="Attach file">📎</button>
+                  </div>
                   <div id="cap-${t.id}" class="comment-att-preview"></div>
                   <div class="comment-post-row">
-                    <button class="btn-attach-comment" onclick="triggerCommentAttach('${t.id}')">📎 Attach</button>
                     <button class="btn-post" onclick="postComment('${g.id}','${t.id}')">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                       Post
