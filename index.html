@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Personal Wallet</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -26,15 +26,20 @@
   --text: #e2e4f0;
   --muted: #5a5d7a;
   --danger: #f87171;
-  --success: #34d399;
 }
 
 body {
   font-family: 'DM Mono', monospace;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  padding: 0;
+  background: var(--bg); color: var(--text);
+  min-height: 100vh; padding: 0;
+}
+
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(111,94,249,0.08) 0%, transparent 60%),
+    linear-gradient(rgba(111,94,249,0.025) 1px, transparent 1px) 0 0 / 36px 36px,
+    linear-gradient(90deg, rgba(111,94,249,0.025) 1px, transparent 1px) 0 0 / 36px 36px;
 }
 
 /* ── PIN screen ── */
@@ -43,703 +48,493 @@ body {
   display: flex; align-items: center; justify-content: center;
   background: var(--bg); padding: 1.5rem;
 }
-
 #pinScreen.hidden { display: none; }
 
 .pin-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 2.5rem 2rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 2.5rem 2rem;
   width: 100%; max-width: 320px;
   display: flex; flex-direction: column; align-items: center; gap: 1.75rem;
-  box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(111,94,249,0.08);
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6);
   animation: fadeUp .35s ease;
 }
 
-@keyframes fadeUp {
-  from { opacity:0; transform:translateY(16px); }
-  to   { opacity:1; transform:translateY(0); }
-}
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
 
 .pin-logo {
-  font-family: 'Syne', sans-serif;
-  font-size: 1.7rem; font-weight: 800; letter-spacing: -.04em;
-  background: linear-gradient(135deg, #fff 20%, var(--accent2));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-  text-align: center;
+  font-family: 'Syne', sans-serif; font-size: 1.7rem; font-weight: 800;
+  letter-spacing: -.04em; text-align: center;
 }
-
+.pin-logo .w1 { color: #fff; }
+.pin-logo .w2 { color: var(--accent2); font-weight: 400; }
 .pin-logo-sub { font-size: .65rem; color: var(--muted); text-align: center; margin-top: .2rem; }
 
-.pin-label {
-  font-size: .72rem; color: var(--muted); text-align: center; line-height: 1.6;
-}
-
-/* PIN dot indicators */
-.pin-dots {
-  display: flex; gap: .65rem; align-items: center; justify-content: center;
-}
-
-.pin-dot {
-  width: 14px; height: 14px; border-radius: 50%;
-  border: 2px solid #272a3d;
-  background: transparent;
-  transition: background .15s, border-color .15s, transform .15s;
-  display: inline-block;
-}
-
-.pin-dot.filled {
-  background: #6f5ef9;
-  border-color: #6f5ef9;
-  transform: scale(1.15);
-}
-
-.pin-dot.error {
-  background: #f87171;
-  border-color: #f87171;
-  animation: shake .35s ease;
-}
-
-@keyframes shake {
-  0%,100% { transform: translateX(0); }
-  20%     { transform: translateX(-5px); }
-  40%     { transform: translateX(5px); }
-  60%     { transform: translateX(-5px); }
-  80%     { transform: translateX(3px); }
-}
-
-/* PIN numpad */
-.pin-pad {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: .55rem;
-  width: 100%;
-}
-
-.pin-btn {
-  aspect-ratio: 1;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  font-family: 'Syne', sans-serif;
-  font-size: 1.25rem; font-weight: 600;
-  color: var(--text);
-  cursor: pointer;
-  transition: background .1s, transform .1s, border-color .1s;
-  display: flex; align-items: center; justify-content: center;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.pin-btn:active, .pin-btn:hover { background: var(--surface3); border-color: var(--accent); transform: scale(.94); }
-
-.pin-btn.del { font-size: 1rem; color: var(--muted); }
-.pin-btn.del:hover { color: var(--danger); border-color: var(--danger); }
-.pin-btn.empty { background: transparent; border-color: transparent; cursor: default; pointer-events: none; }
-
-.pin-error-msg {
-  font-size: .7rem; color: var(--danger); text-align: center;
-  min-height: 1rem; transition: opacity .2s;
-}
-
-.pin-attempts {
-  font-size: .62rem; color: var(--muted); text-align: center;
-}
-
-/* User selector button */
+/* User selector */
 .user-btn {
   display: flex; align-items: center; gap: .6rem;
   padding: .55rem .85rem; border-radius: 9px;
   background: var(--surface2); border: 1px solid var(--border);
   color: var(--text); font-family: 'DM Mono', monospace;
-  font-size: .78rem; cursor: pointer; transition: all .15s;
-  width: 100%; text-align: left;
+  font-size: .78rem; cursor: pointer; transition: all .15s; width: 100%;
 }
-.user-btn:hover  { border-color: var(--accent); background: var(--surface3); }
+.user-btn:hover  { border-color: var(--accent); }
 .user-btn.active { border-color: var(--accent); background: var(--accent-glow); color: var(--accent2); }
-.user-btn .u-avatar {
+.u-avatar {
   width: 28px; height: 28px; border-radius: 50%;
   background: var(--accent); color: #fff;
   display: flex; align-items: center; justify-content: center;
   font-size: .75rem; font-weight: 700; flex-shrink: 0;
-  font-family: 'Syne', sans-serif;
 }
 
-/* Ambient background */
-body::before {
-  content: '';
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background:
-    radial-gradient(ellipse 60% 40% at 70% 0%, rgba(111,94,249,0.07) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 30% at 10% 90%, rgba(34,211,238,0.04) 0%, transparent 60%);
+/* PIN dots */
+.pin-dots { display: flex; gap: .65rem; align-items: center; justify-content: center; }
+.pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid #272a3d; background: transparent;
+  transition: background .15s, border-color .15s, transform .15s;
+  display: inline-block;
+}
+.pin-dot.filled { background: #6f5ef9; border-color: #6f5ef9; transform: scale(1.15); }
+.pin-dot.error  { background: #f87171; border-color: #f87171; animation: shake .35s ease; }
+
+@keyframes shake {
+  0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)}
+  40%{transform:translateX(5px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(3px)}
 }
 
-body::after {
-  content: '';
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background-image:
-    linear-gradient(rgba(111,94,249,0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(111,94,249,0.025) 1px, transparent 1px);
-  background-size: 36px 36px;
+/* PIN pad */
+.pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: .55rem; width: 100%; }
+.pin-btn {
+  aspect-ratio: 1; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; font-family: 'Syne', sans-serif;
+  font-size: 1.25rem; font-weight: 600; color: var(--text); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .1s, border-color .1s, transform .1s;
+  -webkit-tap-highlight-color: transparent;
 }
+.pin-btn:active { background: var(--surface3); border-color: var(--accent); transform: scale(.94); }
+.pin-btn.del    { font-size: 1rem; color: var(--muted); }
+.pin-btn.empty  { background: transparent; border-color: transparent; pointer-events: none; }
+
+.pin-error-msg { font-size: .7rem; color: #f87171; text-align: center; min-height: 1rem; }
+.pin-attempts  { font-size: .62rem; color: var(--muted); text-align: center; }
 
 /* ── Setup screen ── */
 #setupScreen {
-  position: relative; z-index: 10;
-  min-height: 100vh;
-  display: flex; align-items: center; justify-content: center;
-  padding: 1.5rem;
+  position: relative; z-index: 10; min-height: 100vh;
+  display: flex; align-items: center; justify-content: center; padding: 1.5rem;
 }
 
 .setup-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 2.5rem 2rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 2.5rem 2rem;
   width: 100%; max-width: 420px;
   display: flex; flex-direction: column; gap: 1.75rem;
-  box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(111,94,249,0.08);
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6);
   animation: fadeUp .4s ease;
 }
 
-@keyframes fadeUp {
-  from { opacity:0; transform:translateY(16px); }
-  to   { opacity:1; transform:translateY(0); }
-}
-
-.setup-logo {
-  display: flex; flex-direction: column; gap: .3rem;
-}
-
 .setup-logo .wordmark {
-  font-family: 'Syne', sans-serif;
-  font-size: 1.9rem; font-weight: 800; letter-spacing: -.04em;
-  background: linear-gradient(135deg, #fff 20%, var(--accent2));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  font-family: 'Syne', sans-serif; font-size: 1.9rem; font-weight: 800;
+  letter-spacing: -.04em;
 }
+.setup-logo .wordmark .w1 { color: #fff; }
+.setup-logo .wordmark .w2 { color: var(--accent2); font-weight: 400; }
+.setup-logo .tagline { font-size: .68rem; color: var(--muted); margin-top: .2rem; }
 
-.setup-logo .tagline {
-  font-size: .68rem; color: var(--muted); letter-spacing: .04em;
-}
-
-.setup-divider {
-  height: 1px; background: var(--border);
-}
-
-.setup-steps {
-  display: flex; flex-direction: column; gap: .55rem;
-}
-
+.setup-steps { display: flex; flex-direction: column; gap: .55rem; }
 .setup-step {
   display: flex; gap: .7rem; align-items: flex-start;
   background: var(--surface2); border-radius: 9px;
   padding: .6rem .8rem; font-size: .72rem; line-height: 1.65; color: var(--text);
 }
-
-.setup-step .sn {
-  font-family: 'Syne', sans-serif; font-weight: 700;
-  color: var(--accent2); flex-shrink: 0; font-size: .8rem; min-width: 14px;
-}
-
-.setup-step a { color: var(--accent2); text-decoration: none; }
-.setup-step a:hover { text-decoration: underline; }
-.setup-step code {
-  background: var(--surface3); padding: .1rem .35rem; border-radius: 4px;
-  font-size: .68rem; color: var(--text);
-}
+.setup-step .sn { font-family:'Syne',sans-serif; font-weight:700; color:var(--accent2); flex-shrink:0; }
+.setup-step a   { color: var(--accent2); text-decoration: none; }
+.setup-step code { background:var(--surface3); padding:.1rem .35rem; border-radius:4px; font-size:.68rem; }
 
 .field-group { display: flex; flex-direction: column; gap: .75rem; }
-
 .field { display: flex; flex-direction: column; gap: .3rem; }
-
-.field label {
-  font-size: .63rem; color: var(--muted);
-  text-transform: uppercase; letter-spacing: .1em;
-}
-
+.field label { font-size: .63rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
 .field input {
-  background: var(--surface2); border: 1px solid var(--border);
-  color: var(--text); font-family: 'DM Mono', monospace;
-  font-size: .75rem; padding: .65rem .9rem; border-radius: 9px;
-  outline: none; width: 100%;
-  transition: border-color .2s, box-shadow .2s;
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  font-family: 'DM Mono', monospace; font-size: .75rem; padding: .65rem .9rem;
+  border-radius: 9px; outline: none; width: 100%; transition: border-color .2s;
 }
-
-.field input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
-}
-
+.field input:focus { border-color: var(--accent); }
 .field input::placeholder { color: var(--muted); }
-
-.field .hint {
-  font-size: .63rem; color: var(--muted); line-height: 1.5;
-}
-
+.field .hint { font-size: .63rem; color: var(--muted); line-height: 1.5; }
 .field .hint a { color: var(--accent2); text-decoration: none; }
 
 .btn-connect {
   display: flex; align-items: center; justify-content: center; gap: .6rem;
-  padding: .8rem 1.5rem; border-radius: 10px;
-  background: var(--accent); color: #fff;
+  padding: .8rem 1.5rem; border-radius: 10px; background: var(--accent); color: #fff;
   font-family: 'DM Mono', monospace; font-size: .82rem; font-weight: 500;
-  border: none; cursor: pointer;
-  transition: background .15s, transform .1s, box-shadow .15s;
+  border: none; cursor: pointer; transition: background .15s, transform .1s;
   box-shadow: 0 4px 20px rgba(111,94,249,.35);
 }
-
-.btn-connect:hover { background: #5a4dd4; transform: translateY(-1px); box-shadow: 0 6px 28px rgba(111,94,249,.45); }
-.btn-connect:active { transform: translateY(0); }
-.btn-connect:disabled { background: var(--surface3); color: var(--muted); cursor: not-allowed; box-shadow: none; transform: none; }
+.btn-connect:hover { background: #5a4dd4; transform: translateY(-1px); }
+.btn-connect:disabled { background: var(--surface3); color: var(--muted); cursor: not-allowed; transform: none; box-shadow: none; }
 
 .setup-error {
   background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.3);
-  border-radius: 8px; padding: .6rem .85rem;
-  font-size: .72rem; color: var(--danger); line-height: 1.6;
-  display: none;
+  border-radius: 8px; padding: .6rem .85rem; font-size: .72rem; color: #f87171;
+  line-height: 1.6; display: none;
 }
-
 .setup-error.show { display: block; }
 
 /* ── Main app ── */
-#appScreen {
-  display: none;
-  position: relative; z-index: 10;
-  max-width: 780px; margin: 0 auto;
-  padding: 2rem 1rem 5rem;
-}
-
+#appScreen { display: none; position: relative; z-index: 10; max-width: 780px; margin: 0 auto; padding: 2rem 1rem 5rem; }
 #appScreen.show { display: block; }
 
 /* Header */
-header {
-  display: flex; align-items: flex-start;
-  justify-content: space-between; gap: 1rem;
-  margin-bottom: 2rem; flex-wrap: wrap;
-}
+header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
 
-.wordmark-sm {
-  font-family: 'Syne', sans-serif;
-  font-size: 1.7rem; font-weight: 800; letter-spacing: -.04em;
-  background: linear-gradient(135deg, #fff 20%, var(--accent2));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
-
-.wordmark-sm span { font-weight: 400; opacity: .45; }
-
+.wordmark-sm { font-family: 'Syne', sans-serif; font-size: 1.7rem; font-weight: 800; letter-spacing: -.04em; }
+.wordmark-sm .w1 { color: #fff; }
+.wordmark-sm .w2 { color: var(--accent2); font-weight: 400; }
 .header-sub { font-size: .65rem; color: var(--muted); margin-top: .2rem; }
 
 .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: .45rem; }
-
-/* Sync pill */
-.sync-pill {
-  display: flex; align-items: center; gap: .45rem;
-  padding: .3rem .75rem; border-radius: 999px;
-  border: 1px solid var(--border); background: var(--surface2);
-  font-size: .65rem; color: var(--muted); transition: border-color .2s;
-}
-
-.sync-pill.ok     { border-color: rgba(52,211,153,.35); color: var(--text); }
-.sync-pill.saving { border-color: rgba(111,94,249,.4); }
-.sync-pill.error  { border-color: rgba(248,113,113,.35); color: var(--danger); }
-
-.s-dot {
-  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-  background: var(--muted); transition: background .2s;
-}
-
-.sync-pill.ok     .s-dot { background: var(--done); }
-.sync-pill.saving .s-dot { background: var(--accent); animation: blink .5s infinite; }
-.sync-pill.error  .s-dot { background: var(--danger); }
-
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
-
 .stats { font-size: .67rem; color: var(--muted); text-align: right; line-height: 1.9; }
 .stats strong { color: var(--accent2); }
 
+.sync-pill {
+  display: flex; align-items: center; gap: .45rem; padding: .3rem .75rem;
+  border-radius: 999px; border: 1px solid var(--border); background: var(--surface2);
+  font-size: .65rem; color: var(--muted); transition: border-color .2s;
+}
+.sync-pill.ok     { border-color: rgba(52,211,153,.35); color: var(--text); }
+.sync-pill.saving { border-color: rgba(111,94,249,.4); }
+.sync-pill.error  { border-color: rgba(248,113,113,.35); color: #f87171; }
+.s-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background .2s; }
+.sync-pill.ok     .s-dot { background: var(--done); }
+.sync-pill.saving .s-dot { background: var(--accent); animation: blink .5s infinite; }
+.sync-pill.error  .s-dot { background: #f87171; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
 .btn-signout {
-  font-family: 'DM Mono', monospace; font-size: .62rem;
-  padding: .2rem .55rem; border-radius: 5px;
-  background: transparent; border: 1px solid var(--border);
+  font-family: 'DM Mono', monospace; font-size: .62rem; padding: .2rem .55rem;
+  border-radius: 5px; background: transparent; border: 1px solid var(--border);
   color: var(--muted); cursor: pointer; transition: all .15s;
 }
+.btn-signout:hover { border-color: #f87171; color: #f87171; }
 
-.btn-signout:hover { border-color: var(--danger); color: var(--danger); }
+/* Add group bar — original style, two rows */
+.add-group-bar { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1.5rem; }
+.add-group-row { display: flex; gap: .5rem; align-items: center; }
+.add-group-row input[type="text"] { flex: 1; }
 
-/* Add group */
-.add-group-bar { display:flex; gap:.5rem; margin-bottom:1.5rem; flex-wrap:wrap; align-items:center; }
-
-.cat-toggle { display:flex; gap:.3rem; flex-shrink:0; }
-
+/* Category buttons */
+.cat-wrap { display: flex; gap: .35rem; align-items: center; }
+.cat-lbl { font-size: .63rem; color: var(--muted); white-space: nowrap; }
 .cat-btn {
-  font-family:'DM Mono',monospace; font-size:.7rem;
-  padding:.4rem .75rem; border-radius:7px;
-  background:var(--surface2); border:1px solid var(--border);
-  color:var(--muted); cursor:pointer; transition:all .15s; white-space:nowrap;
+  font-family: 'DM Mono', monospace; font-size: .68rem;
+  padding: .3rem .65rem; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--muted); cursor: pointer; transition: all .15s; white-space: nowrap;
 }
-.cat-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
-.cat-btn:hover:not(.active) { border-color:var(--accent2); color:var(--accent2); }
+.cat-btn.active-task { background: rgba(111,94,249,.2); border-color: var(--accent); color: var(--accent2); }
+.cat-btn.active-doc  { background: rgba(34,211,238,.1); border-color: #22d3ee; color: #22d3ee; }
+.cat-btn:hover:not(.active-task):not(.active-doc) { border-color: var(--accent2); color: var(--accent2); }
 
-/* Category badge on group */
-.cat-badge {
-  font-size:.58rem; padding:.12rem .45rem; border-radius:999px;
-  border:1px solid; flex-shrink:0;
+/* Groups */
+.groups { display: flex; flex-direction: column; gap: .75rem; }
+
+/* Task group = default purple accent */
+.group {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 13px; animation: slideIn .2s ease;
 }
-.cat-badge.task     { background:rgba(111,94,249,.12); color:#a78bfa; border-color:rgba(111,94,249,.3); }
-.cat-badge.document { background:rgba(34,211,238,.1);  color:#22d3ee; border-color:rgba(34,211,238,.3); }
+/* Document group = teal accent */
+.group.doc-group { border-color: rgba(34,211,238,.2); }
+.group.doc-group .group-header:hover { background: rgba(34,211,238,.04); }
+
+@keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+
+.group-header {
+  display: flex; align-items: center; gap: .75rem; padding: .9rem 1rem;
+  cursor: pointer; user-select: none; transition: background .15s; border-radius: 13px;
+}
+.group.open .group-header { border-radius: 13px 13px 0 0; }
+.group-header:hover { background: var(--surface2); }
+
+.chevron { width: 18px; height: 18px; color: var(--muted); transition: transform .2s; flex-shrink: 0; }
+.group.open .chevron { transform: rotate(90deg); }
+
+.group-name { font-family: 'Syne', sans-serif; font-weight: 600; font-size: .95rem; flex: 1; }
+
+.group-meta { font-size: .65rem; color: var(--muted); display: flex; gap: .45rem; align-items: center; }
+.pill { padding: .12rem .5rem; border-radius: 999px; font-size: .62rem; }
+.pill-done  { background: rgba(52,211,153,.1); color: var(--done); }
+.pill-total { background: var(--surface3); color: var(--muted); }
+
+.btn-icon {
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  background: transparent; color: var(--muted); border-radius: 7px; font-size: .82rem; flex-shrink: 0;
+}
+.btn-icon:hover { background: var(--surface3); color: #f87171; }
+.btn-icon.neutral:hover { color: var(--accent2); }
+
+.group-body { display: none; border-top: 1px solid var(--border); border-radius: 0 0 13px 13px; overflow: hidden; }
+.group.open .group-body { display: block; }
+
+.group-progress { height: 2px; background: var(--border); }
+.group-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--done)); transition: width .4s ease; }
+
+/* Tasks */
+.tasks { padding: .5rem; display: flex; flex-direction: column; gap: .3rem; }
+.task-wrap { border-radius: 9px; border: 1px solid transparent; transition: border-color .15s; overflow: hidden; }
+.task-wrap:hover { border-color: var(--border); }
+.task-wrap.expanded { border-color: var(--accent) !important; }
+.group.doc-group .task-wrap.expanded { border-color: #22d3ee !important; }
+
+.task { display: flex; align-items: center; gap: .6rem; padding: .6rem .75rem; background: var(--surface2); }
+.task-name { flex: 1; font-size: .8rem; line-height: 1.4; }
+.task-wrap.done .task-name { text-decoration: line-through; color: var(--muted); }
+
+.status-btn {
+  display: flex; align-items: center; gap: .3rem; padding: .22rem .55rem;
+  border-radius: 6px; font-size: .62rem; font-weight: 500;
+  background: var(--surface3); color: var(--muted); white-space: nowrap;
+}
+.status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.status-btn[data-status="todo"]     .status-dot { background: var(--muted); }
+.status-btn[data-status="started"]               { background: rgba(245,158,66,.12); color: #f59e42; }
+.status-btn[data-status="started"]  .status-dot { background: #f59e42; }
+.status-btn[data-status="progress"]              { background: rgba(34,211,238,.1);  color: #22d3ee; }
+.status-btn[data-status="progress"] .status-dot { background: #22d3ee; }
+.status-btn[data-status="done"]                  { background: rgba(52,211,153,.1);  color: var(--done); }
+.status-btn[data-status="done"]     .status-dot { background: var(--done); }
+
+.task .btn-icon { opacity: 0; }
+.task:hover .btn-icon, .task-wrap.expanded .task .btn-icon { opacity: 1; }
+
+/* Status portal */
+#statusPortal {
+  position: fixed; background: var(--surface3); border: 1px solid var(--border);
+  border-radius: 9px; overflow: hidden; z-index: 9999; min-width: 145px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.55); display: none;
+}
+#statusPortal.open { display: block; }
+.status-option {
+  display: flex; align-items: center; gap: .5rem; padding: .5rem .75rem;
+  font-size: .7rem; cursor: pointer; transition: background .1s;
+  color: var(--text); background: transparent; width: 100%; text-align: left; border-radius: 0;
+}
+.status-option:hover { background: var(--surface2); }
+.status-option .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+/* Task detail panel */
+.task-detail {
+  display: none; background: var(--surface3); border-top: 1px solid var(--border);
+  padding: .9rem; flex-direction: column; gap: 1rem;
+}
+.task-wrap.expanded .task-detail { display: flex; }
+.detail-section { display: flex; flex-direction: column; gap: .35rem; }
+.detail-label { font-size: .6rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+
+/* Comments */
+.comments-list { display: flex; flex-direction: column; gap: .45rem; }
+
+.comment-item {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: .55rem .7rem;
+  display: flex; flex-direction: column; gap: .3rem;
+  animation: slideIn .15s ease;
+}
+.comment-header { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.comment-dt { font-size: .58rem; color: var(--muted); }
+.comment-actions { display: flex; gap: .2rem; }
+.comment-action-btn {
+  background: none; border: none; cursor: pointer; font-size: .6rem;
+  color: var(--muted); padding: .1rem .3rem; border-radius: 4px;
+  transition: all .15s; font-family: 'DM Mono', monospace;
+}
+.comment-action-btn:hover { color: var(--accent2); background: var(--surface3); }
+.comment-action-btn.del:hover { color: #f87171; }
+.comment-body { font-size: .75rem; line-height: 1.6; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+
+.comment-edit-area {
+  width: 100%; font-size: .75rem; line-height: 1.55; padding: .4rem .6rem;
+  background: var(--surface); border: 1px solid var(--accent); border-radius: 6px;
+  color: var(--text); font-family: 'DM Mono', monospace; resize: vertical; min-height: 52px; outline: none;
+}
+.comment-edit-row { display: flex; gap: .35rem; justify-content: flex-end; margin-top: .25rem; }
+.btn-comment-save {
+  font-family: 'DM Mono', monospace; font-size: .65rem; padding: .25rem .65rem;
+  border-radius: 6px; background: var(--accent); color: #fff; border: none; cursor: pointer;
+}
+.btn-comment-cancel {
+  font-family: 'DM Mono', monospace; font-size: .65rem; padding: .25rem .65rem;
+  border-radius: 6px; background: var(--surface3); color: var(--muted);
+  border: 1px solid var(--border); cursor: pointer;
+}
+
+/* Comment input area */
+.comment-input-wrap { display: flex; flex-direction: column; gap: .4rem; }
+.comment-textarea {
+  width: 100%; font-size: .76rem; line-height: 1.6; padding: .6rem .8rem;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); font-family: 'DM Mono', monospace; resize: vertical; min-height: 64px; outline: none;
+  transition: border-color .2s;
+}
+.comment-textarea:focus { border-color: var(--accent); }
+.comment-textarea::placeholder { color: var(--muted); }
+
+.comment-post-row { display: flex; align-items: center; justify-content: space-between; }
+
+.btn-attach-comment {
+  display: flex; align-items: center; gap: .3rem; font-family: 'DM Mono', monospace;
+  font-size: .68rem; padding: .35rem .7rem; border-radius: 7px;
+  background: var(--surface3); border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer; transition: all .15s;
+}
+.btn-attach-comment:hover { border-color: var(--accent2); color: var(--accent2); }
+
+.btn-post {
+  display: flex; align-items: center; gap: .4rem; font-family: 'DM Mono', monospace;
+  font-size: .72rem; font-weight: 500; padding: .4rem .9rem; border-radius: 7px;
+  background: var(--accent); color: #fff; border: none; cursor: pointer;
+  transition: background .15s, transform .1s;
+  box-shadow: 0 2px 10px rgba(111,94,249,.3);
+}
+.btn-post:hover { background: #5a4dd4; transform: translateY(-1px); }
+
+/* Comment attachment preview chips */
+.comment-att-preview { display: flex; flex-wrap: wrap; gap: .3rem; }
+.comment-att-chip {
+  display: inline-flex; align-items: center; gap: .25rem;
+  background: var(--surface3); border: 1px solid var(--border);
+  border-radius: 6px; padding: .15rem .45rem; font-size: .63rem; color: var(--text);
+}
+.comment-att-chip button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: .6rem; padding: 0 .1rem; }
+.comment-att-chip button:hover { color: #f87171; }
+
+/* Attachments in comment body */
+.comment-atts { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .35rem; }
+
+.attach-img {
+  position: relative; width: 72px; height: 72px; border-radius: 8px;
+  overflow: hidden; border: 1px solid var(--border); flex-shrink: 0; cursor: pointer;
+}
+.attach-img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .2s; }
+.attach-img:hover img { transform: scale(1.06); }
+.attach-img .img-overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,0);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; opacity: 0; transition: all .2s;
+}
+.attach-img:hover .img-overlay { background: rgba(0,0,0,.45); opacity: 1; }
+.attach-img .del-btn {
+  position: absolute; top: 3px; right: 3px; width: 18px; height: 18px;
+  background: rgba(0,0,0,.72); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .56rem; color: #fff; cursor: pointer;
+  opacity: 0; transition: opacity .15s; border: none; padding: 0; z-index: 2;
+}
+.attach-img:hover .del-btn { opacity: 1; }
+
+.attach-file {
+  display: flex; align-items: center; gap: .4rem;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 7px; padding: .35rem .65rem; font-size: .66rem; max-width: 200px;
+  cursor: pointer; transition: border-color .15s;
+}
+.attach-file:hover { border-color: var(--accent); }
+.attach-file .file-icon { font-size: .95rem; flex-shrink: 0; }
+.attach-file .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.attach-file:hover .file-name { color: var(--accent2); }
+.attach-file .del-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: .68rem; padding: 0; flex-shrink: 0; }
+.attach-file .del-btn:hover { color: #f87171; }
+
+.no-comments { font-size: .7rem; color: var(--muted); text-align: center; padding: .5rem; font-style: italic; }
+
+/* Add task/item row */
+.add-task-row { display: flex; gap: .4rem; padding: .5rem; border-top: 1px solid var(--border); }
+.add-task-row input[type="text"] { flex: 1; font-size: .76rem; }
+.btn-sm { background: var(--accent); color: #fff; font-size: .73rem; padding: .5rem .85rem; box-shadow: 0 2px 10px rgba(111,94,249,.25); }
+.btn-sm:hover { background: #5a4dd4; }
 
 input[type="text"], textarea {
-  background: var(--surface); border: 1px solid var(--border);
-  color: var(--text); font-family: 'DM Mono', monospace;
-  font-size: .8rem; padding: .65rem 1rem; border-radius: 9px;
-  outline: none; transition: border-color .2s, box-shadow .2s;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  font-family: 'DM Mono', monospace; font-size: .8rem; padding: .65rem 1rem;
+  border-radius: 9px; outline: none; transition: border-color .2s, box-shadow .2s;
 }
-
-input[type="text"] { flex: 1; }
-input[type="text"]:focus, textarea:focus {
-  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow);
-}
+input[type="text"]:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 input[type="text"]::placeholder, textarea::placeholder { color: var(--muted); }
 
 button { cursor: pointer; font-family: 'DM Mono', monospace; border: none; border-radius: 9px; transition: all .15s; }
 
 .btn-primary {
-  background: var(--accent); color: #fff;
-  font-size: .8rem; font-weight: 500;
+  background: var(--accent); color: #fff; font-size: .8rem; font-weight: 500;
   padding: .65rem 1.2rem; white-space: nowrap;
   box-shadow: 0 2px 12px rgba(111,94,249,.3);
 }
-
 .btn-primary:hover { background: #5a4dd4; transform: translateY(-1px); }
 
-/* Groups */
-.groups { display: flex; flex-direction: column; gap: .75rem; }
-
-.group {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 13px; animation: slideIn .2s ease;
-}
-
-@keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
-
-.group-header {
-  display: flex; align-items: center; gap: .75rem;
-  padding: .9rem 1rem; cursor: pointer; user-select: none;
-  transition: background .15s; border-radius: 13px;
-}
-
-.group.open .group-header { border-radius: 13px 13px 0 0; }
-.group-header:hover { background: var(--surface2); }
-
-.chevron { width:18px; height:18px; color:var(--muted); transition:transform .2s; flex-shrink:0; }
-.group.open .chevron { transform:rotate(90deg); }
-
-.group-name { font-family:'Syne',sans-serif; font-weight:600; font-size:.95rem; flex:1; }
-
-.group-meta { font-size:.65rem; color:var(--muted); display:flex; gap:.45rem; align-items:center; }
-.pill { padding:.12rem .5rem; border-radius:999px; font-size:.62rem; }
-.pill-done  { background:rgba(52,211,153,.1); color:var(--done); }
-.pill-total { background:var(--surface3); color:var(--muted); }
-
-.btn-icon {
-  width:28px; height:28px; display:flex; align-items:center; justify-content:center;
-  background:transparent; color:var(--muted); border-radius:7px; font-size:.82rem; flex-shrink:0;
-}
-.btn-icon:hover { background:var(--surface3); color:var(--danger); }
-.btn-icon.neutral:hover { color:var(--accent2); }
-
-.group-body { display:none; border-top:1px solid var(--border); border-radius:0 0 13px 13px; overflow:hidden; }
-.group.open .group-body { display:block; }
-
-.group-progress { height:2px; background:var(--border); }
-.group-progress-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--done)); transition:width .4s ease; }
-
-/* Tasks */
-.tasks { padding:.5rem; display:flex; flex-direction:column; gap:.3rem; }
-
-.task-wrap { border-radius:9px; border:1px solid transparent; transition:border-color .15s; overflow:hidden; }
-.task-wrap:hover { border-color:var(--border); }
-.task-wrap.expanded { border-color:var(--accent)!important; }
-
-.task { display:flex; align-items:center; gap:.55rem; padding:.6rem .75rem; background:var(--surface2); }
-.task-name { flex:1; font-size:.8rem; line-height:1.4; }
-.task-wrap.done .task-name { text-decoration:line-through; color:var(--muted); }
-.attach-badge { font-size:.62rem; color:var(--muted); white-space:nowrap; }
-
-.status-btn {
-  display:flex; align-items:center; gap:.3rem; padding:.22rem .55rem; border-radius:6px;
-  font-size:.62rem; font-weight:500; background:var(--surface3); color:var(--muted); white-space:nowrap;
-}
-.status-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
-.status-btn[data-status="todo"]     .status-dot { background:var(--muted); }
-.status-btn[data-status="started"]               { background:rgba(245,158,66,.12); color:var(--started); }
-.status-btn[data-status="started"]  .status-dot { background:var(--started); }
-.status-btn[data-status="progress"]              { background:rgba(34,211,238,.1);  color:var(--progress); }
-.status-btn[data-status="progress"] .status-dot { background:var(--progress); }
-.status-btn[data-status="done"]                  { background:rgba(52,211,153,.1);  color:var(--done); }
-.status-btn[data-status="done"]     .status-dot { background:var(--done); }
-
-.task .btn-icon { opacity:0; }
-.task:hover .btn-icon, .task-wrap.expanded .task .btn-icon { opacity:1; }
-
-/* Status portal */
-#statusPortal {
-  position:fixed; background:var(--surface3); border:1px solid var(--border);
-  border-radius:9px; overflow:hidden; z-index:9999; min-width:145px;
-  box-shadow:0 12px 32px rgba(0,0,0,.55); display:none;
-}
-#statusPortal.open { display:block; }
-
-.status-option {
-  display:flex; align-items:center; gap:.5rem; padding:.5rem .75rem;
-  font-size:.7rem; cursor:pointer; transition:background .1s;
-  color:var(--text); background:transparent; width:100%; text-align:left; border-radius:0;
-}
-.status-option:hover { background:var(--surface2); }
-.status-option .dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
-
-/* Task detail */
-.task-detail {
-  display:none; background:var(--surface3); border-top:1px solid var(--border);
-  padding:.9rem; flex-direction:column; gap:1rem;
-}
-.task-wrap.expanded .task-detail { display:flex; }
-
-.detail-section { display:flex; flex-direction:column; gap:.35rem; }
-.detail-label { font-size:.6rem; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; }
-
-/* ── Comment system ── */
-.comments-list { display:flex; flex-direction:column; gap:.45rem; }
-
-.comment-item {
-  background:var(--surface2); border:1px solid var(--border);
-  border-radius:8px; padding:.55rem .7rem;
-  display:flex; flex-direction:column; gap:.3rem;
-  animation:slideIn .15s ease;
-}
-
-.comment-header { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
-.comment-dt { font-size:.58rem; color:var(--muted); white-space:nowrap; }
-.comment-actions { display:flex; gap:.2rem; }
-
-.comment-action-btn {
-  background:none; border:none; cursor:pointer;
-  font-size:.6rem; color:var(--muted); padding:.1rem .3rem;
-  border-radius:4px; transition:all .15s; font-family:'DM Mono',monospace;
-}
-.comment-action-btn:hover { color:var(--accent2); background:var(--surface3); }
-.comment-action-btn.del:hover { color:var(--danger); }
-
-.comment-body {
-  font-size:.75rem; line-height:1.6; color:var(--text);
-  white-space:pre-wrap; word-break:break-word;
-}
-
-.comment-edit-area {
-  width:100%; font-size:.75rem; line-height:1.55;
-  padding:.4rem .6rem; background:var(--surface);
-  border:1px solid var(--accent); border-radius:6px;
-  color:var(--text); font-family:'DM Mono',monospace;
-  resize:vertical; min-height:52px; outline:none;
-}
-
-.comment-edit-row { display:flex; gap:.35rem; justify-content:flex-end; margin-top:.25rem; }
-
-.btn-comment-save {
-  font-family:'DM Mono',monospace; font-size:.65rem;
-  padding:.25rem .65rem; border-radius:6px;
-  background:var(--accent); color:#fff; border:none; cursor:pointer;
-  transition:background .15s;
-}
-.btn-comment-save:hover { background:#5a4dd4; }
-
-.btn-comment-cancel {
-  font-family:'DM Mono',monospace; font-size:.65rem;
-  padding:.25rem .65rem; border-radius:6px;
-  background:var(--surface3); color:var(--muted);
-  border:1px solid var(--border); cursor:pointer; transition:all .15s;
-}
-.btn-comment-cancel:hover { color:var(--text); }
-
-.comment-input-wrap { display:flex; flex-direction:column; gap:.4rem; }
-
-.comment-textarea {
-  width:100%; font-size:.76rem; line-height:1.6;
-  padding:.6rem .8rem; background:var(--surface2);
-  border:1px solid var(--border); border-radius:8px;
-  color:var(--text); font-family:'DM Mono',monospace;
-  resize:vertical; min-height:64px; outline:none;
-  transition:border-color .2s, box-shadow .2s;
-}
-.comment-textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
-.comment-textarea::placeholder { color:var(--muted); }
-
-.comment-post-row { display:flex; justify-content:flex-end; }
-
-.btn-post {
-  font-family:'DM Mono',monospace; font-size:.72rem; font-weight:500;
-  padding:.4rem .9rem; border-radius:7px;
-  background:var(--accent); color:#fff; border:none; cursor:pointer;
-  transition:background .15s, transform .1s;
-  display:flex; align-items:center; gap:.4rem;
-  box-shadow:0 2px 10px rgba(111,94,249,.3);
-}
-.btn-post:hover { background:#5a4dd4; transform:translateY(-1px); }
-.btn-post:active { transform:translateY(0); }
-
-.no-comments { font-size:.7rem; color:var(--muted); text-align:center; padding:.5rem; font-style:italic; }
-
-/* Comment attachment chips */
-.comment-att-preview {
-  display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.3rem;
-}
-.comment-att-chip {
-  display:inline-flex; align-items:center; gap:.3rem;
-  background:var(--surface3); border:1px solid var(--border);
-  border-radius:6px; padding:.2rem .5rem; font-size:.65rem; color:var(--text);
-}
-.comment-att-attach-btn {
-  font-family:'DM Mono',monospace; font-size:.65rem;
-  padding:.25rem .55rem; border-radius:6px;
-  background:var(--surface3); border:1px solid var(--border);
-  color:var(--muted); cursor:pointer; transition:all .15s;
-  display:inline-flex; align-items:center; gap:.3rem;
-}
-.comment-att-attach-btn:hover { border-color:var(--accent); color:var(--accent2); }
-
-/* Attachments */
-.attach-grid { display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:.5rem; }
-
-.attach-img {
-  position:relative; width:76px; height:76px; border-radius:8px; overflow:hidden;
-  border:1px solid var(--border); flex-shrink:0; cursor:pointer;
-}
-.attach-img img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .2s; }
-.attach-img:hover img { transform:scale(1.06); }
-.attach-img .img-overlay {
-  position:absolute; inset:0; background:rgba(0,0,0,0);
-  display:flex; align-items:center; justify-content:center;
-  transition:background .2s; font-size:1.1rem; opacity:0; transition:all .2s;
-}
-.attach-img:hover .img-overlay { background:rgba(0,0,0,.45); opacity:1; }
-.attach-img .del-btn {
-  position:absolute; top:3px; right:3px; width:18px; height:18px;
-  background:rgba(0,0,0,.75); border-radius:50%;
-  display:flex; align-items:center; justify-content:center;
-  font-size:.56rem; color:#fff; cursor:pointer;
-  opacity:0; transition:opacity .15s; border:none; padding:0; z-index:2;
-}
-.attach-img:hover .del-btn { opacity:1; }
-
-.attach-file {
-  display:flex; align-items:center; gap:.4rem;
-  background:var(--surface2); border:1px solid var(--border);
-  border-radius:8px; padding:.35rem .65rem; font-size:.66rem; max-width:210px;
-  cursor:pointer; transition:border-color .15s;
-}
-.attach-file:hover { border-color:var(--accent); }
-.attach-file .file-icon { font-size:.95rem; flex-shrink:0; }
-.attach-file .file-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); }
-.attach-file:hover .file-name { color:var(--accent2); }
-.attach-file .del-btn { background:none; border:none; color:var(--muted); cursor:pointer; font-size:.68rem; padding:0; flex-shrink:0; }
-.attach-file .del-btn:hover { color:var(--danger); }
-
-/* Uploading indicator */
-.attach-uploading {
-  display:flex; align-items:center; gap:.4rem;
-  background:var(--surface2); border:1px dashed var(--accent);
-  border-radius:8px; padding:.35rem .65rem; font-size:.66rem; color:var(--muted);
-}
-
-.attach-drop {
-  display:flex; align-items:center; gap:.6rem;
-  border:1.5px dashed var(--border); border-radius:9px;
-  padding:.6rem .9rem; cursor:pointer;
-  transition:border-color .15s, background .15s; font-size:.7rem; color:var(--muted);
-}
-.attach-drop:hover { border-color:var(--accent); color:var(--accent2); background:var(--accent-glow); }
-
-/* Viewer */
+/* Viewer overlay */
 .viewer-overlay {
-  position:fixed; inset:0; background:rgba(0,0,0,.93); z-index:10000;
-  display:none; align-items:center; justify-content:center; padding:1rem;
+  position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 10000;
+  display: none; align-items: center; justify-content: center; padding: 1rem;
 }
-.viewer-overlay.show { display:flex; }
-
+.viewer-overlay.show { display: flex; }
 .viewer-close {
-  position:fixed; top:1rem; right:1rem; width:38px; height:38px;
-  background:var(--surface3); border:1px solid var(--border); border-radius:50%;
-  display:flex; align-items:center; justify-content:center;
-  cursor:pointer; font-size:1rem; color:var(--text); z-index:10001;
-  transition:background .15s; font-family:monospace;
+  position: fixed; top: 1rem; right: 1rem; width: 38px; height: 38px;
+  background: var(--surface3); border: 1px solid var(--border); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 1rem; color: var(--text); z-index: 10001;
+  transition: background .15s;
 }
-.viewer-close:hover { background:var(--danger); border-color:var(--danger); }
-
-.viewer-inner { display:flex; flex-direction:column; align-items:center; gap:.75rem; max-width:90vw; }
-.viewer-inner img { max-width:88vw; max-height:82vh; border-radius:8px; object-fit:contain; box-shadow:0 0 60px rgba(0,0,0,.7); }
-.viewer-inner iframe { width:82vw; height:82vh; border:none; border-radius:8px; background:#fff; }
-
+.viewer-close:hover { background: #f87171; border-color: #f87171; }
+.viewer-inner { display: flex; flex-direction: column; align-items: center; gap: .75rem; max-width: 90vw; }
+.viewer-inner img { max-width: 88vw; max-height: 82vh; border-radius: 8px; object-fit: contain; box-shadow: 0 0 60px rgba(0,0,0,.7); }
+.viewer-inner iframe { width: 85vw; height: 82vh; border: none; border-radius: 8px; background: #fff; }
+.viewer-inner video { max-width: 88vw; max-height: 82vh; border-radius: 8px; }
+.viewer-inner audio { width: 320px; margin: 2rem 0; }
 .viewer-toolbar {
-  display:flex; align-items:center; gap:.6rem;
-  background:var(--surface2); border:1px solid var(--border);
-  border-radius:999px; padding:.35rem .75rem;
+  display: flex; align-items: center; gap: .6rem;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 999px; padding: .35rem .75rem;
 }
-.viewer-name { font-size:.7rem; color:var(--muted); max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-
+.viewer-name { font-size: .7rem; color: var(--muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .btn-newtab {
-  display:flex; align-items:center; gap:.35rem;
-  padding:.28rem .65rem; background:var(--surface3); border:1px solid var(--border);
-  border-radius:6px; font-size:.65rem; color:var(--text);
-  font-family:'DM Mono',monospace; cursor:pointer; transition:border-color .15s;
+  display: flex; align-items: center; gap: .35rem; padding: .28rem .65rem;
+  background: var(--surface3); border: 1px solid var(--border); border-radius: 6px;
+  font-size: .65rem; color: var(--text); font-family: 'DM Mono', monospace; cursor: pointer;
 }
-.btn-newtab:hover { border-color:var(--accent); color:var(--accent2); }
-
+.btn-newtab:hover { border-color: var(--accent); color: var(--accent2); }
 .no-preview {
-  background:var(--surface2); border-radius:12px;
-  padding:2.5rem 2rem; text-align:center;
-  display:flex; flex-direction:column; gap:.85rem; align-items:center;
+  background: var(--surface2); border-radius: 12px; padding: 2.5rem 2rem;
+  text-align: center; display: flex; flex-direction: column; gap: .85rem; align-items: center;
 }
-.no-preview .big-icon { font-size:2.8rem; }
-.no-preview .np-name { font-size:.8rem; color:var(--text); max-width:280px; overflow:hidden; text-overflow:ellipsis; }
-.no-preview .np-hint { font-size:.7rem; color:var(--muted); }
+.no-preview .big-icon { font-size: 2.8rem; }
+.no-preview .np-name { font-size: .8rem; color: var(--text); max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
+.no-preview .np-hint { font-size: .7rem; color: var(--muted); }
 
-/* Add task row */
-.add-task-row { display:flex; gap:.4rem; padding:.5rem; border-top:1px solid var(--border); }
-.add-task-row input { font-size:.76rem; }
-.btn-sm { background:var(--accent); color:#fff; font-size:.73rem; padding:.5rem .85rem; box-shadow:0 2px 10px rgba(111,94,249,.25); }
-.btn-sm:hover { background:#5a4dd4; }
-
-.empty-tasks { text-align:center; padding:1.2rem; font-size:.72rem; color:var(--muted); }
-.empty-state { text-align:center; padding:3rem 1rem; color:var(--muted); font-size:.78rem; line-height:2.2; }
-.empty-state .big { font-size:2.5rem; margin-bottom:.5rem; }
-
-input[type="file"] { display:none; }
-
-/* Toast */
-#toast {
-  position:fixed; bottom:1.5rem; left:50%;
-  transform:translateX(-50%) translateY(60px);
-  background:var(--surface3); border:1px solid var(--border);
-  padding:.55rem 1.2rem; border-radius:999px; font-size:.7rem; color:var(--text);
-  box-shadow:0 8px 24px rgba(0,0,0,.45); transition:transform .25s ease;
-  z-index:9998; white-space:nowrap; max-width:90vw; overflow:hidden; text-overflow:ellipsis;
-}
-#toast.show { transform:translateX(-50%) translateY(0); }
-
-/* Loading spinner overlay */
+/* Loading */
 #loadingScreen {
-  position:fixed; inset:0; background:var(--bg); z-index:20;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1rem;
+  position: fixed; inset: 0; background: var(--bg); z-index: 20;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
 }
+.spinner { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--accent); animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-label { font-size: .72rem; color: var(--muted); }
 
-.spinner {
-  width:32px; height:32px; border-radius:50%;
-  border:2px solid var(--border); border-top-color:var(--accent);
-  animation:spin .7s linear infinite;
+.empty-tasks { text-align: center; padding: 1.2rem; font-size: .72rem; color: var(--muted); }
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: .78rem; line-height: 2.2; }
+.empty-state .big { font-size: 2.5rem; margin-bottom: .5rem; }
+
+input[type="file"] { display: none; }
+
+#toast {
+  position: fixed; bottom: 1.5rem; left: 50%;
+  transform: translateX(-50%) translateY(60px);
+  background: var(--surface3); border: 1px solid var(--border);
+  padding: .55rem 1.2rem; border-radius: 999px; font-size: .7rem; color: var(--text);
+  box-shadow: 0 8px 24px rgba(0,0,0,.45); transition: transform .25s ease;
+  z-index: 9998; white-space: nowrap;
 }
-@keyframes spin { to { transform:rotate(360deg); } }
-
-.loading-label { font-size:.72rem; color:var(--muted); }
+#toast.show { transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
@@ -748,22 +543,16 @@ input[type="file"] { display:none; }
 <div id="pinScreen">
   <div class="pin-card">
     <div>
-      <div class="pin-logo">Personal <span style="font-weight:400;opacity:.45">Wallet</span></div>
+      <div class="pin-logo"><span class="w1">Personal </span><span class="w2">Wallet</span></div>
       <div class="pin-logo-sub" id="pinLogoSub">enter your PIN to continue</div>
     </div>
-
-    <!-- User selector (hidden when only 1 user) -->
     <div id="userSelector" style="display:none;width:100%">
-      <div class="detail-label" style="margin-bottom:.4rem;font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Select user</div>
-      <div id="userList" style="display:flex;flex-direction:column;gap:.35rem;width:100%"></div>
+      <div id="userList" style="display:flex;flex-direction:column;gap:.35rem"></div>
     </div>
-
     <div class="pin-dots" id="pinDots">
-      <!-- dots built dynamically from PIN_LENGTH in config.js -->
+      <!-- built dynamically -->
     </div>
-
     <div class="pin-error-msg" id="pinErrorMsg"></div>
-
     <div class="pin-pad">
       <button class="pin-btn" onclick="pinPress('1')">1</button>
       <button class="pin-btn" onclick="pinPress('2')">2</button>
@@ -778,7 +567,6 @@ input[type="file"] { display:none; }
       <button class="pin-btn" onclick="pinPress('0')">0</button>
       <button class="pin-btn del" onclick="pinDelete()">⌫</button>
     </div>
-
     <div class="pin-attempts" id="pinAttempts"></div>
   </div>
 </div>
@@ -789,7 +577,7 @@ input[type="file"] { display:none; }
   <div class="loading-label">Connecting…</div>
 </div>
 
-<!-- Attachment viewer -->
+<!-- Viewer -->
 <div class="viewer-overlay" id="viewerOverlay">
   <button class="viewer-close" id="viewerClose">✕</button>
   <div class="viewer-inner" id="viewerInner"></div>
@@ -799,39 +587,19 @@ input[type="file"] { display:none; }
 <div id="setupScreen" style="display:none">
   <div class="setup-card">
     <div class="setup-logo">
-      <div class="wordmark">Task<span style="font-weight:400;opacity:.45">Flow</span></div>
+      <div class="wordmark"><span class="w1">Personal </span><span class="w2">Wallet</span></div>
       <div class="tagline">github-powered · always in sync</div>
     </div>
-
-    <div class="setup-divider"></div>
-
     <div class="setup-steps">
-      <div class="setup-step">
-        <span class="sn">1</span>
-        <span>Go to <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens/new</a> → Generate a classic token</span>
-      </div>
-      <div class="setup-step">
-        <span class="sn">2</span>
-        <span>Give it a name like <code>taskflow</code>, set <strong>No expiration</strong>, tick the <code>repo</code> scope (full control of private repos)</span>
-      </div>
-      <div class="setup-step">
-        <span class="sn">3</span>
-        <span>Create a <strong>private repo</strong> on GitHub (e.g. <code>my-taskflow-data</code>) — this is where your data lives</span>
-      </div>
-      <div class="setup-step">
-        <span class="sn">4</span>
-        <span>Paste your token and repo details below — saved forever in this browser</span>
-      </div>
+      <div class="setup-step"><span class="sn">1</span><span>Go to <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens/new</a> → Generate a fine-grained token</span></div>
+      <div class="setup-step"><span class="sn">2</span><span>Select your data repo → set <strong>Contents</strong> permission to <code>Read and write</code></span></div>
+      <div class="setup-step"><span class="sn">3</span><span>Create a <strong>private repo</strong> on GitHub to store your data</span></div>
+      <div class="setup-step"><span class="sn">4</span><span>Paste your token and repo details below — saved forever in this browser</span></div>
     </div>
-
     <div class="field-group">
       <div class="field">
         <label>GitHub Personal Access Token</label>
-        <input type="password" id="inputToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
-        <div class="hint">
-          <a href="https://github.com/settings/tokens/new" target="_blank">Create token →</a>
-          &nbsp;Select scope: <code>repo</code> · Expiration: <code>No expiration</code>
-        </div>
+        <input type="password" id="inputToken" placeholder="github_pat_xxxx" autocomplete="off">
       </div>
       <div class="field">
         <label>GitHub Username</label>
@@ -839,13 +607,11 @@ input[type="file"] { display:none; }
       </div>
       <div class="field">
         <label>Repository Name</label>
-        <input type="text" id="inputRepo" placeholder="my-taskflow-data">
+        <input type="text" id="inputRepo" placeholder="my-wallet-data">
         <div class="hint">Must be a private repo you already created on GitHub</div>
       </div>
     </div>
-
     <div class="setup-error" id="setupError"></div>
-
     <button class="btn-connect" id="connectBtn" onclick="connect()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
       Connect GitHub Repo
@@ -857,34 +623,37 @@ input[type="file"] { display:none; }
 <div id="appScreen">
   <header>
     <div>
-      <div class="wordmark-sm">Personal <span>Wallet</span></div>
+      <div class="wordmark-sm"><span class="w1">Personal </span><span class="w2">Wallet</span></div>
       <div class="header-sub" id="repoLabel"></div>
     </div>
     <div class="header-right">
       <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;justify-content:flex-end">
-        <div class="sync-pill" id="syncPill">
-          <span class="s-dot"></span>
-          <span id="syncLabel">Connecting…</span>
-        </div>
+        <div class="sync-pill" id="syncPill"><span class="s-dot"></span><span id="syncLabel">Connecting…</span></div>
         <button class="btn-signout" onclick="signOut()">disconnect</button>
       </div>
       <div class="stats" id="globalStats"></div>
     </div>
   </header>
 
+  <!-- Add group bar — two clean rows -->
   <div class="add-group-bar">
-    <input type="text" id="newGroupInput" placeholder="Group name…" maxlength="60">
-    <div class="cat-toggle" id="catToggle">
-      <button class="cat-btn active" id="catTask" onclick="selectCat('task')">📋 Task</button>
-      <button class="cat-btn" id="catDoc" onclick="selectCat('document')">📁 Document</button>
+    <div class="add-group-row">
+      <input type="text" id="newGroupInput" placeholder="New group name…" maxlength="60"
+        onkeydown="if(event.key==='Enter') addGroup()">
+      <button class="btn-primary" onclick="addGroup()">+ Add Group</button>
     </div>
-    <button class="btn-primary" onclick="addGroup()">+ Add</button>
+    <div class="add-group-row">
+      <span class="cat-lbl">Category:</span>
+      <div class="cat-wrap">
+        <button class="cat-btn active-task" id="catTask" onclick="selectCat('task')">📋 Task</button>
+        <button class="cat-btn" id="catDoc" onclick="selectCat('document')">📁 Document</button>
+      </div>
+    </div>
   </div>
 
   <div class="groups" id="groupsContainer"></div>
-
   <div class="empty-state" id="emptyState" style="display:none">
-    <div class="big">📋</div>
+    <div class="big">💼</div>
     Add a group above to get started.<br>
     <span style="font-size:.65rem">Everything saves to your GitHub repo automatically.</span>
   </div>
@@ -895,21 +664,29 @@ input[type="file"] { display:none; }
 <input type="file" id="commentFileInput" multiple>
 <div id="toast"></div>
 
-<!-- ═══════════════════════════════════════════
-     CONFIG — edit this block to change PIN
-     To get a PIN hash:
-     1. Go to https://emn178.github.io/online-tools/sha256.html
-     2. Type your 6-digit PIN → copy the hash
-     3. Replace pinHash value below
-     4. Commit and push — done!
-════════════════════════════════════════════ -->
-<script src="config.js"></script>
+<!-- ════════════════════════════════════════
+     CONFIG — edit this to change PIN
+     Hash tool: https://emn178.github.io/online-tools/sha256.html
+════════════════════════════════════════ -->
+<script>
+window.APP_CONFIG = {
+  PIN_LENGTH: 5,
+  users: [
+    {
+      username: 'Admin',
+      pinHash: '92b4023c5fce4cce0b3781d8cc24350d640a51b797eef7b3140001d654238085',
+    },
+  ],
+  MAX_ATTEMPTS:    5,
+  LOCKOUT_MINUTES: 5,
+};
+</script>
+
 <script>
 'use strict';
 
-// ── All constants ─────────────────────────────
+// ── Constants ─────────────────────────────────────────
 const LS_AUTH    = 'tf_authed';
-let   isAuthed   = false; // resets on every page load/refresh
 const LS_TOKEN   = 'tf_gh_token';
 const LS_USER    = 'tf_gh_user';
 const LS_REPO    = 'tf_gh_repo';
@@ -926,6 +703,8 @@ const STATUSES = [
   { key:'done',     label:'Done',        color:'#34d399' },
 ];
 
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
 // ── State ─────────────────────────────────────────────
 let data          = [];
 let ghToken       = '';
@@ -936,144 +715,88 @@ let saveTimer     = null;
 let openDropdown  = null;
 let pendingUpload = null;
 let selectedUser  = null;
+let selectedCat   = 'task';
 let pinEntry      = '';
 let pinFailed     = 0;
 let pinLocked     = false;
+let isAuthed      = false;
 
+// ── Boot ──────────────────────────────────────────────
+window.addEventListener('load', () => { initAuth(); });
+
+// ── SHA-256 (with WebView fallback) ───────────────────
 async function sha256(str) {
-  // Try modern crypto.subtle first (browsers)
   if (window.crypto && window.crypto.subtle) {
     try {
       const buf = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
       return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
     } catch(e) {}
   }
-  // Fallback: pure JS SHA-256 for environments like MIT App Inventor WebView
   return sha256Fallback(str);
 }
 
-// Pure JavaScript SHA-256 — works everywhere including old WebViews
 function sha256Fallback(str) {
-  function rightRotate(value, amount) {
-    return (value >>> amount) | (value << (32 - amount));
-  }
-  const mathPow = Math.pow;
-  const maxWord  = mathPow(2, 32);
-  let result = '';
-  const words = [];
-  const asciiBitLength = str.length * 8;
-
-  let hash = [], k = [];
-  let primeCounter = 0;
-  const isComposite = {};
-  for (let candidate = 2; primeCounter < 64; candidate++) {
-    if (!isComposite[candidate]) {
-      for (let i = candidate * candidate; i < 313; i += candidate) {
-        isComposite[i] = true;
-      }
-      hash[primeCounter] = (mathPow(candidate, .5) * maxWord) | 0;
-      k[primeCounter++]  = (mathPow(candidate, 1/3) * maxWord) | 0;
+  function rr(v,a){return(v>>>a)|(v<<(32-a));}
+  const mp=Math.pow,mw=mp(2,32);
+  let result='',words=[],abl=str.length*8,hash=[],k=[],pc=0,ic={};
+  for(let c=2;pc<64;c++){if(!ic[c]){for(let i=c*c;i<313;i+=c)ic[i]=true;hash[pc]=(mp(c,.5)*mw)|0;k[pc++]=(mp(c,1/3)*mw)|0;}}
+  str+='\x80';while(str.length%64-56)str+='\x00';
+  for(let i=0;i<str.length;i++){const j=str.charCodeAt(i);if(j>>8)return'';words[i>>2]|=j<<((3-i)%4)*8;}
+  words[words.length]=((abl/mw)|0);words[words.length]=(abl|0);
+  for(let j=0;j<words.length;){
+    const w=words.slice(j,j+=16),oh=hash.slice(0);
+    for(let i=0;i<64;i++){
+      const w15=w[i-15],w2=w[i-2],a=hash[0],e=hash[4];
+      const t1=hash[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&hash[5])^(~e&hash[6]))+k[i]+(w[i]=(i<16)?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);
+      const t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
+      hash=[(t1+t2)|0].concat(hash);hash[4]=(hash[4]+t1)|0;hash.length=8;
     }
+    hash=hash.map((a,i)=>(a+oh[i])|0);
   }
-
-  str += '\x80';
-  while (str.length % 64 - 56) str += '\x00';
-
-  for (let i = 0; i < str.length; i++) {
-    const j = str.charCodeAt(i);
-    if (j >> 8) return ''; // non-ASCII
-    words[i >> 2] |= j << ((3 - i) % 4) * 8;
-  }
-  words[words.length] = ((asciiBitLength / maxWord) | 0);
-  words[words.length] = (asciiBitLength | 0);
-
-  for (let j = 0; j < words.length;) {
-    const w = words.slice(j, j += 16);
-    const oldHash = hash.slice(0);
-    for (let i = 0; i < 64; i++) {
-      const w15 = w[i - 15], w2 = w[i - 2];
-      const a = hash[0], e = hash[4];
-      const temp1 = hash[7]
-        + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))
-        + ((e & hash[5]) ^ (~e & hash[6]))
-        + k[i]
-        + (w[i] = (i < 16) ? w[i] : (
-            w[i - 16]
-            + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3))
-            + w[i - 7]
-            + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))
-          ) | 0);
-      const temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22))
-        + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
-      hash = [(temp1 + temp2) | 0].concat(hash);
-      hash[4] = (hash[4] + temp1) | 0;
-      hash.length = 8;
-    }
-    hash = hash.map((a, i) => (a + oldHash[i]) | 0);
-  }
-  hash.forEach(val => {
-    for (let i = 7; i >= 0; i--) {
-      result += ((val >>> (i * 4)) & 0xF).toString(16);
-    }
-  });
+  hash.forEach(v=>{for(let i=7;i>=0;i--)result+=((v>>>(i*4))&0xF).toString(16);});
   return result;
 }
 
-// ── Build user selector on load ───────────────────────
+// ── PIN Auth ──────────────────────────────────────────
 function buildUserSelector() {
-  const cfg   = window.window.APP_CONFIG;
-  const users = cfg.users || [];
+  const cfg    = window.APP_CONFIG;
+  const users  = cfg.users || [];
   const pinLen = cfg.PIN_LENGTH || 6;
 
-  // Build dots dynamically based on PIN_LENGTH
-  const dotsEl = document.getElementById('pinDots');
-  dotsEl.innerHTML = Array.from({length: pinLen}, (_, i) =>
-    `<div class="pin-dot" id="pd${i}"></div>`
-  ).join('');
+  // Build dots
+  document.getElementById('pinDots').innerHTML =
+    Array.from({length: pinLen}, (_, i) => `<div class="pin-dot" id="pd${i}"></div>`).join('');
 
   if (users.length === 1) {
-    // Only one user — auto-select, hide selector
     selectedUser = users[0];
-    document.getElementById('pinLogoSub').textContent =
-      `Hello ${selectedUser.username} — enter your PIN`;
+    document.getElementById('pinLogoSub').textContent = `Hello ${selectedUser.username} — enter your PIN`;
     return;
   }
-
-  // Multiple users — show selector
   document.getElementById('userSelector').style.display = 'block';
   document.getElementById('pinLogoSub').textContent = 'Select user and enter PIN';
-
-  const list = document.getElementById('userList');
-  list.innerHTML = users.map((u, i) => `
-    <button class="user-btn" id="ubtn-${i}" onclick="selectUser(${i})">
-      <div class="u-avatar">${u.username.charAt(0).toUpperCase()}</div>
-      ${u.username}
-    </button>`).join('');
-
-  // Auto-select first user
+  document.getElementById('userList').innerHTML = users.map((u, i) =>
+    `<button class="user-btn" id="ubtn-${i}" onclick="selectUser(${i})">
+      <div class="u-avatar">${u.username.charAt(0).toUpperCase()}</div>${u.username}
+    </button>`
+  ).join('');
   selectUser(0);
 }
 
 function selectUser(index) {
   const users = window.APP_CONFIG.users || [];
   selectedUser = users[index];
-
-  // Update active state
   users.forEach((_, i) => {
-    const btn = document.getElementById('ubtn-' + i);
-    if (btn) btn.classList.toggle('active', i === index);
+    const b = document.getElementById('ubtn-' + i);
+    if (b) b.classList.toggle('active', i === index);
   });
-
-  // Reset pin entry when switching users
   pinEntry = '';
   updatePinDots();
   clearPinError();
-  document.getElementById('pinLogoSub').textContent =
-    `Hello ${selectedUser.username} — enter your PIN`;
+  document.getElementById('pinLogoSub').textContent = `Hello ${selectedUser.username} — enter your PIN`;
 }
 
 function pinPress(digit) {
-  const pinLen = (window.window.APP_CONFIG.PIN_LENGTH || 6);
+  const pinLen = window.APP_CONFIG.PIN_LENGTH || 6;
   if (pinLocked || pinEntry.length >= pinLen) return;
   pinEntry += digit;
   updatePinDots();
@@ -1088,7 +811,7 @@ function pinDelete() {
 }
 
 function updatePinDots() {
-  const pinLen = window.window.APP_CONFIG.PIN_LENGTH || 6;
+  const pinLen = window.APP_CONFIG.PIN_LENGTH || 6;
   for (let i = 0; i < pinLen; i++) {
     const dot = document.getElementById('pd' + i);
     if (!dot) continue;
@@ -1100,9 +823,8 @@ function updatePinDots() {
 async function checkPin() {
   if (!selectedUser) { pinEntry = ''; return; }
   const hash = await sha256(pinEntry);
-
   if (hash === selectedUser.pinHash) {
-    isAuthed = true;
+    isAuthed  = true;
     pinFailed = 0;
     document.getElementById('pinScreen').classList.add('hidden');
     bootApp();
@@ -1110,7 +832,7 @@ async function checkPin() {
     pinFailed++;
     pinEntry = '';
     showPinError(pinFailed);
-    const pinLen = window.window.APP_CONFIG.PIN_LENGTH || 6;
+    const pinLen = window.APP_CONFIG.PIN_LENGTH || 6;
     for (let i = 0; i < pinLen; i++) {
       const dot = document.getElementById('pd' + i);
       if (!dot) continue;
@@ -1128,16 +850,12 @@ async function checkPin() {
 }
 
 function showPinError(attempts) {
-  const remaining = window.APP_CONFIG.MAX_ATTEMPTS - attempts;
-  const msg = document.getElementById('pinErrorMsg');
-  msg.textContent = remaining > 0
-    ? `Incorrect PIN — ${remaining} attempt${remaining !== 1 ? 's' : ''} left`
-    : '';
+  const rem = window.APP_CONFIG.MAX_ATTEMPTS - attempts;
+  document.getElementById('pinErrorMsg').textContent = rem > 0
+    ? `Incorrect PIN — ${rem} attempt${rem !== 1 ? 's' : ''} left` : '';
 }
 
-function clearPinError() {
-  document.getElementById('pinErrorMsg').textContent = '';
-}
+function clearPinError() { document.getElementById('pinErrorMsg').textContent = ''; }
 
 function lockout() {
   pinLocked = true;
@@ -1145,23 +863,17 @@ function lockout() {
   localStorage.setItem('tf_lockout', until);
   const msg = document.getElementById('pinErrorMsg');
   msg.textContent = `Too many attempts — locked for ${window.APP_CONFIG.LOCKOUT_MINUTES} min`;
-  document.querySelectorAll('.pin-btn').forEach(b => {
-    b.style.opacity = '.3'; b.style.pointerEvents = 'none';
-  });
-  const interval = setInterval(() => {
-    const remaining = Math.ceil((until - Date.now()) / 1000);
-    if (remaining <= 0) {
-      clearInterval(interval);
-      pinLocked = false; pinFailed = 0;
-      localStorage.removeItem('tf_lockout');
-      msg.textContent = '';
-      document.querySelectorAll('.pin-btn').forEach(b => {
-        b.style.opacity = ''; b.style.pointerEvents = '';
-      });
+  document.querySelectorAll('.pin-btn').forEach(b => { b.style.opacity = '.3'; b.style.pointerEvents = 'none'; });
+  const iv = setInterval(() => {
+    const rem = Math.ceil((until - Date.now()) / 1000);
+    if (rem <= 0) {
+      clearInterval(iv); pinLocked = false; pinFailed = 0;
+      localStorage.removeItem('tf_lockout'); msg.textContent = '';
+      document.querySelectorAll('.pin-btn').forEach(b => { b.style.opacity = ''; b.style.pointerEvents = ''; });
       document.getElementById('pinAttempts').textContent = '';
     } else {
       document.getElementById('pinAttempts').textContent =
-        `Try again in ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
+        `Try again in ${Math.floor(rem/60)}:${String(rem%60).padStart(2,'0')}`;
     }
   }, 1000);
 }
@@ -1172,99 +884,64 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Backspace') pinDelete();
 });
 
-// ── Init auth ─────────────────────────────────────────
 function initAuth() {
-  // Check lockout
   const lockUntil = parseInt(localStorage.getItem('tf_lockout') || '0');
   if (lockUntil > Date.now()) {
     pinLocked = true;
     const msg = document.getElementById('pinErrorMsg');
-    msg.textContent = 'Too many attempts — locked';
-    document.querySelectorAll('.pin-btn').forEach(b => {
-      b.style.opacity = '.3'; b.style.pointerEvents = 'none';
-    });
-    const interval = setInterval(() => {
-      const remaining = Math.ceil((lockUntil - Date.now()) / 1000);
-      if (remaining <= 0) {
-        clearInterval(interval);
-        pinLocked = false;
-        localStorage.removeItem('tf_lockout');
+    msg.textContent = `Too many attempts — locked`;
+    document.querySelectorAll('.pin-btn').forEach(b => { b.style.opacity = '.3'; b.style.pointerEvents = 'none'; });
+    const iv = setInterval(() => {
+      const rem = Math.ceil((lockUntil - Date.now()) / 1000);
+      if (rem <= 0) {
+        clearInterval(iv); pinLocked = false; localStorage.removeItem('tf_lockout');
         msg.textContent = '';
-        document.querySelectorAll('.pin-btn').forEach(b => {
-          b.style.opacity = ''; b.style.pointerEvents = '';
-        });
+        document.querySelectorAll('.pin-btn').forEach(b => { b.style.opacity = ''; b.style.pointerEvents = ''; });
         document.getElementById('pinAttempts').textContent = '';
       } else {
         document.getElementById('pinAttempts').textContent =
-          `Try again in ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
+          `Try again in ${Math.floor(rem/60)}:${String(rem%60).padStart(2,'0')}`;
       }
     }, 1000);
   }
-
-  // Build user selector
   buildUserSelector();
-
-  // isAuthed is always false on fresh load/refresh — always show PIN
-  if (isAuthed) {
-    document.getElementById('pinScreen').classList.add('hidden');
-    bootApp();
-    return;
-  }
+  // isAuthed is always false on fresh page load → always show PIN
 }
 
-// ── Boot ──────────────────────────────────────────────
-window.addEventListener('load', () => { initAuth(); });
-
-// rename old boot to bootApp
+// ── Boot (after PIN) ──────────────────────────────────
 async function bootApp() {
-  // DOM is ready here
   window.portal    = document.getElementById('statusPortal');
   window.fileInput = document.getElementById('fileInput');
   fileInput.addEventListener('change', handleFileUpload);
 
-  // Comment attachment handler
+  // Comment file input handler
   window._commentAtts = {};
   const cfi = document.getElementById('commentFileInput');
   if (cfi) {
     cfi.addEventListener('change', async () => {
-      const tid   = window._commentAttachTid;
+      const tid = window._commentAttachTid;
       if (!tid) return;
       const files = Array.from(cfi.files);
       if (!files.length) return;
       if (!window._commentAtts[tid]) window._commentAtts[tid] = [];
-
       for (const file of files) {
         try {
-          const dataUrl = await readFileAsDataURL(file);
-          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-          const ghPath   = `${ATT_DIR}/c_${tid}_${uid()}_${safeName}`;
           toast(`⬆️ Uploading ${file.name}…`);
-          const downloadUrl = await uploadAttachmentToGitHub(ghPath, dataUrl);
-          window._commentAtts[tid].push({
-            id: uid(), name: file.name, type: file.type,
-            url: downloadUrl, path: ghPath
-          });
-          // Update preview
-          const preview = document.getElementById('cap-' + tid);
-          if (preview) {
-            preview.innerHTML = window._commentAtts[tid].map(a =>
-              `<span class="comment-att-chip">
-                ${fileIcon(a.type)} ${esc(a.name)}
-                <button onclick="removeCommentAtt('${tid}','${a.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.65rem;padding:0 .2rem">✕</button>
-              </span>`
-            ).join('');
-          }
+          const dataUrl  = await readFileAsDataURL(file);
+          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+          const ghPath   = `${ATT_DIR}/c_${tid}_${uid()}_${safeName}`;
+          const dlUrl    = await uploadAttachmentToGitHub(ghPath, dataUrl);
+          window._commentAtts[tid].push({ id: uid(), name: file.name, type: file.type, url: dlUrl, path: ghPath });
+          updateCommentAttPreview(tid);
           toast('✅ Attached');
-        } catch(e) {
-          toast('⚠️ ' + e.message);
-        }
+        } catch(e) { toast('⚠️ ' + e.message); }
       }
     });
   }
+
   ghToken = localStorage.getItem(LS_TOKEN) || '';
   ghUser  = localStorage.getItem(LS_USER)  || '';
   ghRepo  = localStorage.getItem(LS_REPO)  || '';
-
   try { shas = JSON.parse(localStorage.getItem(LS_SHAS) || '{}'); } catch { shas = {}; }
   try { data = JSON.parse(localStorage.getItem(LS_DATA) || '[]'); } catch { data = []; }
 
@@ -1273,136 +950,99 @@ async function bootApp() {
     const ok = await silentConnect();
     if (ok) { showApp(); return; }
   }
-
   hideLoading();
   showSetup();
 }
 
+function updateCommentAttPreview(tid) {
+  const preview = document.getElementById('cap-' + tid);
+  if (!preview) return;
+  const atts = window._commentAtts[tid] || [];
+  preview.innerHTML = atts.map(a =>
+    `<span class="comment-att-chip">
+      ${fileIcon(a.type)} ${esc(a.name)}
+      <button onclick="removeCommentAtt('${tid}','${a.id}')">✕</button>
+    </span>`
+  ).join('');
+}
 
-async function silentConnect() {
-  try {
-    // 8 second timeout so it never hangs forever
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
+function removeCommentAtt(tid, aid) {
+  if (!window._commentAtts || !window._commentAtts[tid]) return;
+  window._commentAtts[tid] = window._commentAtts[tid].filter(a => a.id !== aid);
+  updateCommentAttPreview(tid);
+}
 
-    const res = await ghFetch(
-      `https://api.github.com/repos/${ghUser}/${ghRepo}`,
-      { signal: controller.signal }
-    );
-    clearTimeout(timer);
-
-    if (!res.ok) return false;
-
-    await loadFromGitHub();
-    return true;
-  } catch {
-    return false;
-  }
+function triggerCommentAttach(tid) {
+  window._commentAttachTid = tid;
+  const fi = document.getElementById('commentFileInput');
+  if (fi) { fi.value = ''; fi.click(); }
 }
 
 // ── GitHub API ────────────────────────────────────────
 function ghFetch(url, options = {}) {
   return fetch(url, {
     ...options,
-    headers: {
-      'Authorization': `token ${ghToken}`,
-      'Accept': 'application/vnd.github.v3+json',
-      ...(options.headers || {}),
-    },
+    headers: { 'Authorization': `token ${ghToken}`, 'Accept': 'application/vnd.github.v3+json', ...(options.headers || {}) },
   });
+}
+
+async function silentConnect() {
+  try {
+    const ctrl = new AbortController();
+    const t    = setTimeout(() => ctrl.abort(), 8000);
+    const res  = await ghFetch(`https://api.github.com/repos/${ghUser}/${ghRepo}`, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!res.ok) return false;
+    await loadFromGitHub();
+    return true;
+  } catch { return false; }
 }
 
 async function loadFromGitHub() {
   try {
-    const res = await ghFetch(
-      `https://api.github.com/repos/${ghUser}/${ghRepo}/contents/${DATA_PATH}`
-    );
-
-    if (res.status === 404) {
-      // File doesn't exist yet — start fresh and create it
-      data = [];
-      await writeFileToGitHub(DATA_PATH, JSON.stringify([], null, 2), null);
-      return;
-    }
-
-    if (!res.ok) throw new Error('Failed to load data');
-
+    const res = await ghFetch(`https://api.github.com/repos/${ghUser}/${ghRepo}/contents/${DATA_PATH}`);
+    if (res.status === 404) { data = []; await writeFileToGitHub(DATA_PATH, JSON.stringify([],null,2), null); return; }
+    if (!res.ok) throw new Error('Load failed');
     const json = await res.json();
     shas[DATA_PATH] = json.sha;
     localStorage.setItem(LS_SHAS, JSON.stringify(shas));
-
-    const content = atob(json.content.replace(/\n/g, ''));
+    const content = atob(json.content.replace(/\n/g,''));
     data = JSON.parse(content);
     localStorage.setItem(LS_DATA, JSON.stringify(data));
-  } catch(e) {
-    // Use cached data if GitHub fails
-    console.warn('GitHub load failed, using cache:', e);
-  }
+  } catch(e) { console.warn('GitHub load failed, using cache:', e); }
 }
 
 async function writeFileToGitHub(path, content, sha) {
-  const body = {
-    message: `TaskFlow update: ${path}`,
-    content: btoa(unescape(encodeURIComponent(content))),
-  };
+  const body = { message: `Personal Wallet update: ${path}`, content: btoa(unescape(encodeURIComponent(content))) };
   if (sha) body.sha = sha;
-
-  const res = await ghFetch(
-    `https://api.github.com/repos/${ghUser}/${ghRepo}/contents/${path}`,
-    { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-  );
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `GitHub write failed (${res.status})`);
-  }
-
+  const res = await ghFetch(`https://api.github.com/repos/${ghUser}/${ghRepo}/contents/${path}`,
+    { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.message || `Write failed (${res.status})`); }
   const result = await res.json();
-  // Cache the new SHA so future updates work
   shas[path] = result.content.sha;
   localStorage.setItem(LS_SHAS, JSON.stringify(shas));
   return result;
 }
 
 async function uploadAttachmentToGitHub(path, base64Data) {
-  // base64Data is a dataURL like "data:image/png;base64,xxxx"
   const rawB64 = base64Data.split(',')[1];
-  const body = {
-    message: `TaskFlow attachment: ${path}`,
-    content: rawB64,
-  };
-
-  const sha = shas[path];
+  const body   = { message: `Personal Wallet attachment: ${path}`, content: rawB64 };
+  const sha    = shas[path];
   if (sha) body.sha = sha;
-
-  const res = await ghFetch(
-    `https://api.github.com/repos/${ghUser}/${ghRepo}/contents/${path}`,
-    { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-  );
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || 'Upload failed');
-  }
-
+  const res = await ghFetch(`https://api.github.com/repos/${ghUser}/${ghRepo}/contents/${path}`,
+    { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.message || 'Upload failed'); }
   const result = await res.json();
   shas[path] = result.content.sha;
   localStorage.setItem(LS_SHAS, JSON.stringify(shas));
-
-  // Return the raw GitHub URL to serve the file
   return result.content.download_url;
 }
 
 async function deleteFileFromGitHub(path, sha) {
-  const body = { message: `TaskFlow delete: ${path}`, sha };
-  const res = await ghFetch(
-    `https://api.github.com/repos/${ghUser}/${ghRepo}/contents/${path}`,
-    { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-  );
-  if (res.ok) {
-    delete shas[path];
-    localStorage.setItem(LS_SHAS, JSON.stringify(shas));
-  }
+  const body = { message: `Personal Wallet delete: ${path}`, sha };
+  const res  = await ghFetch(`https://api.github.com/repos/${ghUser}/${ghRepo}/contents/${path}`,
+    { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (res.ok) { delete shas[path]; localStorage.setItem(LS_SHAS, JSON.stringify(shas)); }
 }
 
 // ── Connect flow ──────────────────────────────────────
@@ -1410,71 +1050,48 @@ async function connect() {
   const token = document.getElementById('inputToken').value.trim();
   const user  = document.getElementById('inputUser').value.trim();
   const repo  = document.getElementById('inputRepo').value.trim();
-
-  if (!token || !user || !repo) {
-    showSetupError('Please fill in all three fields.');
-    return;
-  }
-
+  if (!token || !user || !repo) { showSetupError('Please fill in all three fields.'); return; }
   document.getElementById('connectBtn').disabled = true;
   document.getElementById('connectBtn').textContent = 'Connecting…';
   hideSetupError();
-
-  // Verify credentials
-  const res = await fetch(`https://api.github.com/repos/${user}/${repo}`, {
-    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
-  });
-
+  const res = await fetch(`https://api.github.com/repos/${user}/${repo}`,
+    { headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' } });
   if (!res.ok) {
-    const json = await res.json().catch(() => ({}));
-    showSetupError(json.message === 'Not Found'
-      ? 'Repo not found. Make sure it exists and the token has "repo" scope.'
-      : `Error: ${json.message || res.status}`);
+    const j = await res.json().catch(()=>({}));
+    showSetupError(j.message === 'Not Found' ? 'Repo not found. Make sure it exists and the token has Contents permission.' : `Error: ${j.message || res.status}`);
     document.getElementById('connectBtn').disabled = false;
-    document.getElementById('connectBtn').innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg> Connect GitHub Repo`;
+    document.getElementById('connectBtn').textContent = 'Connect GitHub Repo';
     return;
   }
-
-  // Save credentials
   ghToken = token; ghUser = user; ghRepo = repo;
   localStorage.setItem(LS_TOKEN, token);
   localStorage.setItem(LS_USER, user);
   localStorage.setItem(LS_REPO, repo);
-
-  // Load or create data file
   showLoading();
   await loadFromGitHub();
   showApp();
-  toast('✅ Connected to ' + user + '/' + repo);
+  toast(`✅ Connected to ${user}/${repo}`);
 }
 
 function signOut() {
   if (!confirm('Disconnect from GitHub? Your data stays in the repo.')) return;
-  localStorage.removeItem(LS_TOKEN);
-  localStorage.removeItem(LS_USER);
-  localStorage.removeItem(LS_REPO);
+  localStorage.removeItem(LS_TOKEN); localStorage.removeItem(LS_USER); localStorage.removeItem(LS_REPO);
   ghToken = ghUser = ghRepo = '';
   showSetup();
 }
 
-// ── Save (debounced 800ms) ────────────────────────────
+// ── Save ──────────────────────────────────────────────
 function save() {
-  // Always cache locally
   try { localStorage.setItem(LS_DATA, JSON.stringify(data)); } catch {}
-
   setSyncing();
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
     try {
       const sha = shas[DATA_PATH] || null;
-      await writeFileToGitHub(DATA_PATH, JSON.stringify(data, null, 2), sha);
+      await writeFileToGitHub(DATA_PATH, JSON.stringify(data,null,2), sha);
       setSynced();
-    } catch(e) {
-      setSyncError();
-      toast('⚠️ Sync failed: ' + e.message);
-    }
+    } catch(e) { setSyncError(); toast('⚠️ Sync failed: ' + e.message); }
   }, 800);
-
   render();
 }
 
@@ -1482,105 +1099,56 @@ function save() {
 function showLoading() {
   document.getElementById('loadingScreen').style.display = 'flex';
   document.getElementById('setupScreen').style.display  = 'none';
-  document.getElementById('appScreen').style.display    = 'none';
+  document.getElementById('appScreen').classList.remove('show');
 }
-
-function hideLoading() {
-  document.getElementById('loadingScreen').style.display = 'none';
-}
-
+function hideLoading() { document.getElementById('loadingScreen').style.display = 'none'; }
 function showSetup() {
   hideLoading();
-  document.getElementById('setupScreen').style.display = 'flex';
-  document.getElementById('appScreen').style.display   = 'none';
-  // Pre-fill if we have values
+  document.getElementById('setupScreen').style.display  = 'flex';
+  document.getElementById('appScreen').classList.remove('show');
   if (ghToken) document.getElementById('inputToken').value = ghToken;
   if (ghUser)  document.getElementById('inputUser').value  = ghUser;
   if (ghRepo)  document.getElementById('inputRepo').value  = ghRepo;
 }
-
 function showApp() {
   hideLoading();
   document.getElementById('setupScreen').style.display = 'none';
-  document.getElementById('appScreen').style.display   = 'block';
-  document.getElementById('repoLabel').textContent     = `${ghUser}/${ghRepo}`;
-  setSynced();
-  render();
+  document.getElementById('appScreen').classList.add('show');
+  document.getElementById('repoLabel').textContent = `${ghUser}/${ghRepo}`;
+  setSynced(); render();
 }
-
-function showSetupError(msg) {
-  const el = document.getElementById('setupError');
-  el.textContent = msg;
-  el.classList.add('show');
-}
-
-function hideSetupError() {
-  document.getElementById('setupError').classList.remove('show');
-}
-
-function setSyncing() {
-  const pill = document.getElementById('syncPill');
-  pill.className = 'sync-pill saving';
-  document.getElementById('syncLabel').textContent = 'Saving…';
-}
-
-function setSynced() {
-  const pill = document.getElementById('syncPill');
-  pill.className = 'sync-pill ok';
-  document.getElementById('syncLabel').textContent = 'Synced ✓';
-}
-
-function setSyncError() {
-  const pill = document.getElementById('syncPill');
-  pill.className = 'sync-pill error';
-  document.getElementById('syncLabel').textContent = 'Sync error';
-}
+function showSetupError(msg) { const e = document.getElementById('setupError'); e.textContent = msg; e.classList.add('show'); }
+function hideSetupError()    { document.getElementById('setupError').classList.remove('show'); }
+function setSyncing() { const p = document.getElementById('syncPill'); p.className = 'sync-pill saving'; document.getElementById('syncLabel').textContent = 'Saving…'; }
+function setSynced()  { const p = document.getElementById('syncPill'); p.className = 'sync-pill ok';    document.getElementById('syncLabel').textContent = 'Synced ✓'; }
+function setSyncError(){ const p = document.getElementById('syncPill'); p.className = 'sync-pill error'; document.getElementById('syncLabel').textContent = 'Sync error'; }
 
 // ── Toast ─────────────────────────────────────────────
 let toastTimer;
 function toast(msg) {
   const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
+  el.textContent = msg; el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
 }
 
-// ── Attachment viewer ─────────────────────────────────
+// ── Viewer ────────────────────────────────────────────
 function openViewer(url, name, type) {
   const inner = document.getElementById('viewerInner');
   inner.innerHTML = '';
-
   let content = '';
-
   if (type && type.startsWith('image/')) {
-    // Images load directly
-    content = `<img src="${esc(url)}" alt="${esc(name)}" style="max-width:88vw;max-height:82vh;border-radius:8px;object-fit:contain;box-shadow:0 0 60px rgba(0,0,0,.7)">`;
-
-  } else if (type === 'application/pdf') {
-    // PDF via Google Docs viewer (avoids CORS/download issues)
-    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
-    content = `<iframe src="${esc(viewerUrl)}" style="width:85vw;height:82vh;border:none;border-radius:8px;background:#fff"></iframe>`;
-
-  } else if (type && (type.includes('word') || type.includes('document') || type.includes('sheet') || type.includes('excel') || type.includes('presentation') || type.includes('powerpoint'))) {
-    // Office docs via Google Docs viewer
-    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
-    content = `<iframe src="${esc(viewerUrl)}" style="width:85vw;height:82vh;border:none;border-radius:8px;background:#fff"></iframe>`;
-
+    content = `<img src="${esc(url)}" alt="${esc(name)}">`;
+  } else if (type === 'application/pdf' || type && (type.includes('word') || type.includes('document') || type.includes('sheet') || type.includes('excel'))) {
+    const vu = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+    content  = `<iframe src="${esc(vu)}"></iframe>`;
   } else if (type && type.startsWith('video/')) {
-    content = `<video src="${esc(url)}" controls style="max-width:88vw;max-height:82vh;border-radius:8px"></video>`;
-
+    content = `<video src="${esc(url)}" controls></video>`;
   } else if (type && type.startsWith('audio/')) {
-    content = `<audio src="${esc(url)}" controls style="width:320px;margin:2rem 0"></audio>`;
-
+    content = `<audio src="${esc(url)}" controls></audio>`;
   } else {
-    content = `<div class="no-preview">
-      <div class="big-icon">${fileIcon(type)}</div>
-      <div class="np-name">${esc(name)}</div>
-      <div class="np-hint">No preview available for this file type</div>
-    </div>`;
+    content = `<div class="no-preview"><div class="big-icon">${fileIcon(type)}</div><div class="np-name">${esc(name)}</div><div class="np-hint">No preview available</div></div>`;
   }
-
   inner.innerHTML = content + `
     <div class="viewer-toolbar">
       <span class="viewer-name">${esc(name)}</span>
@@ -1591,32 +1159,21 @@ function openViewer(url, name, type) {
         </button>
       </a>
     </div>`;
-
   document.getElementById('viewerOverlay').classList.add('show');
   document.body.style.overflow = 'hidden';
 }
-
 function closeViewer() {
   document.getElementById('viewerOverlay').classList.remove('show');
   document.getElementById('viewerInner').innerHTML = '';
   document.body.style.overflow = '';
 }
-
-document.getElementById('viewerOverlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('viewerOverlay')) closeViewer();
-});
+document.getElementById('viewerOverlay').addEventListener('click', e => { if (e.target === document.getElementById('viewerOverlay')) closeViewer(); });
 document.getElementById('viewerClose').addEventListener('click', closeViewer);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeViewer(); });
 
 // ── Utils ─────────────────────────────────────────────
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
-
-function esc(s) {
-  return String(s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fileIcon(t) {
   if (!t) return '📎';
   if (t.startsWith('image/')) return '🖼️';
@@ -1629,233 +1186,136 @@ function fileIcon(t) {
   return '📎';
 }
 
-// ── Groups ────────────────────────────────────────────
-let selectedCat = 'task'; // default category
-
-function selectCat(cat) {
-  selectedCat = cat;
-  document.getElementById('catTask').classList.toggle('active', cat === 'task');
-  document.getElementById('catDoc').classList.toggle('active', cat === 'document');
+// ── Timestamp ─────────────────────────────────────────
+function formatDT() {
+  const d = new Date();
+  return `${String(d.getDate()).padStart(2,'0')} ${MONTHS[d.getMonth()]} ${d.getFullYear()} · ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
 
+// ── Category ──────────────────────────────────────────
+function selectCat(cat) {
+  selectedCat = cat;
+  document.getElementById('catTask').className = 'cat-btn' + (cat==='task' ? ' active-task' : '');
+  document.getElementById('catDoc').className  = 'cat-btn' + (cat==='document' ? ' active-doc' : '');
+}
+
+// ── Groups ────────────────────────────────────────────
 function addGroup() {
   const inp = document.getElementById('newGroupInput');
   const name = inp.value.trim(); if (!name) return;
-  data.push({ id:uid(), name, category: selectedCat, open:true, tasks:[] });
+  data.push({ id:uid(), name, category:selectedCat, open:true, tasks:[] });
   inp.value = ''; save();
 }
-
-function deleteGroup(gid) {
-  if (!confirm('Delete this group and all its tasks?')) return;
-  data = data.filter(g => g.id !== gid); save();
-}
-
-function toggleGroup(gid) {
-  const g = data.find(g => g.id === gid);
-  if (g) { g.open = !g.open; save(); }
-}
+function deleteGroup(gid) { if (!confirm('Delete this group?')) return; data = data.filter(g=>g.id!==gid); save(); }
+function toggleGroup(gid) { const g=data.find(g=>g.id===gid); if(g){g.open=!g.open;save();} }
 
 // ── Tasks ─────────────────────────────────────────────
 function addTask(gid) {
-  const inp = document.getElementById('task-input-' + gid);
+  const inp  = document.getElementById('task-input-'+gid);
   const name = inp.value.trim(); if (!name) return;
-  data.find(g => g.id === gid).tasks.push({
-    id:uid(), name, status:'todo', expanded:false, notes:'', attachments:[]
-  });
+  data.find(g=>g.id===gid).tasks.push({ id:uid(), name, status:'todo', expanded:false, attachments:[], comments:[] });
   inp.value = ''; save();
 }
+function deleteTask(gid,tid) { const g=data.find(g=>g.id===gid); g.tasks=g.tasks.filter(t=>t.id!==tid); save(); }
+function toggleExpand(gid,tid) { const t=data.find(g=>g.id===gid).tasks.find(t=>t.id===tid); t.expanded=!t.expanded; save(); }
 
-function deleteTask(gid, tid) {
-  const g = data.find(g => g.id === gid);
-  g.tasks = g.tasks.filter(t => t.id !== tid); save();
+// ── Status ────────────────────────────────────────────
+function setStatus(gid,tid,status) { data.find(g=>g.id===gid).tasks.find(t=>t.id===tid).status=status; closeDropdown(); save(); }
+function openStatusDropdown(e,gid,tid) {
+  e.stopPropagation();
+  if (openDropdown===tid) { closeDropdown(); return; }
+  openDropdown = tid;
+  portal.innerHTML = STATUSES.map(s =>
+    `<button class="status-option" onclick="setStatus('${gid}','${tid}','${s.key}')">
+      <span class="dot" style="background:${s.color}"></span>${s.label}
+    </button>`).join('');
+  const r=e.currentTarget.getBoundingClientRect(), h=STATUSES.length*36;
+  let top=r.bottom+4, left=r.right-148;
+  if(top+h>window.innerHeight-8) top=r.top-h-4;
+  if(left<8) left=8;
+  portal.style.top=top+'px'; portal.style.left=left+'px'; portal.classList.add('open');
 }
-
-function toggleExpand(gid, tid) {
-  const t = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
-  t.expanded = !t.expanded; save();
-}
+function closeDropdown() { portal.classList.remove('open'); portal.innerHTML=''; openDropdown=null; }
+document.addEventListener('click', closeDropdown);
 
 // ── Comments ──────────────────────────────────────────
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-function formatDT() {
-  const d = new Date();
-  const day   = String(d.getDate()).padStart(2,'0');
-  const mon   = MONTHS[d.getMonth()];
-  const year  = d.getFullYear();
-  const hh    = String(d.getHours()).padStart(2,'0');
-  const mm    = String(d.getMinutes()).padStart(2,'0');
-  return `${day} ${mon} ${year} · ${hh}:${mm}`;
-}
-
 function postComment(gid, tid) {
   const ta   = document.getElementById('ct-' + tid);
   const text = ta ? ta.value.trim() : '';
-  const pendingAtts = window._commentAtts && window._commentAtts[tid] || [];
-
-  if (!text && pendingAtts.length === 0) return;
+  const atts = (window._commentAtts && window._commentAtts[tid]) || [];
+  if (!text && atts.length === 0) return;
 
   const t = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
   if (!t.comments) t.comments = [];
-
-  t.comments.push({
-    id: uid(),
-    text,
-    dt: formatDT(),
-    attachments: pendingAtts
-  });
+  t.comments.push({ id:uid(), text, dt:formatDT(), attachments: atts });
 
   if (ta) ta.value = '';
-  // Clear pending attachments
   if (window._commentAtts) window._commentAtts[tid] = [];
-  // Clear preview area
   const preview = document.getElementById('cap-' + tid);
   if (preview) preview.innerHTML = '';
-
   save();
 }
 
-function triggerCommentAttach(tid) {
-  window._commentAttachTid = tid;
-  const fi = document.getElementById('commentFileInput');
-  if (fi) { fi.value = ''; fi.click(); }
-}
-
-function removeCommentAtt(tid, aid) {
-  if (window._commentAtts && window._commentAtts[tid]) {
-    window._commentAtts[tid] = window._commentAtts[tid].filter(a => a.id !== aid);
-    const preview = document.getElementById('cap-' + tid);
-    if (preview) {
-      preview.innerHTML = (window._commentAtts[tid]||[]).map(a =>
-        `<span class="comment-att-chip">
-          ${fileIcon(a.type)} ${esc(a.name)}
-          <button onclick="removeCommentAtt('${tid}','${a.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.65rem;padding:0 .2rem">✕</button>
-        </span>`
-      ).join('');
-    }
-  }
-}
-
-function deleteComment(gid, tid, cid) {
+function deleteComment(gid,tid,cid) {
   const t = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
-  t.comments = (t.comments||[]).filter(c=>c.id!==cid);
-  save();
+  t.comments = (t.comments||[]).filter(c=>c.id!==cid); save();
 }
 
-function editComment(gid, tid, cid) {
+function editComment(gid,tid,cid) {
   const t = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
   const c = (t.comments||[]).find(c=>c.id===cid);
   if (!c) return;
-
-  const item = document.getElementById('ci-' + cid);
+  const item = document.getElementById('ci-'+cid);
   if (!item) return;
-
-  // Replace body with edit textarea inline
   item.innerHTML = `
-    <div class="comment-header">
-      <span class="comment-dt">${esc(c.dt)}</span>
-    </div>
+    <div class="comment-header"><span class="comment-dt">${esc(c.dt)}</span></div>
     <textarea class="comment-edit-area" id="ea-${cid}">${esc(c.text)}</textarea>
     <div class="comment-edit-row">
       <button class="btn-comment-cancel" onclick="cancelEdit('${gid}','${tid}','${cid}')">Cancel</button>
-      <button class="btn-comment-save" onclick="saveEdit('${gid}','${tid}','${cid}')">Save</button>
+      <button class="btn-comment-save"   onclick="saveEdit('${gid}','${tid}','${cid}')">Save</button>
     </div>`;
-
-  const ea = document.getElementById('ea-' + cid);
+  const ea = document.getElementById('ea-'+cid);
   if (ea) { ea.focus(); ea.setSelectionRange(ea.value.length, ea.value.length); }
 }
 
-function saveEdit(gid, tid, cid) {
-  const ea   = document.getElementById('ea-' + cid);
+function saveEdit(gid,tid,cid) {
+  const ea   = document.getElementById('ea-'+cid);
   const text = ea ? ea.value.trim() : '';
   if (!text) return;
-
   const t = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
   const c = (t.comments||[]).find(c=>c.id===cid);
-  if (c) {
-    c.text = text;
-    c.dt   = c.dt + ' (edited)';
-  }
+  if (c) { c.text = text; c.dt += ' (edited)'; }
   save();
 }
 
-function cancelEdit(gid, tid, cid) {
-  // Just re-render to restore original
-  save();
-}
-
-// ── Status ────────────────────────────────────────────
-function setStatus(gid, tid, status) {
-  data.find(g=>g.id===gid).tasks.find(t=>t.id===tid).status = status;
-  closeDropdown(); save();
-}
-
-function openStatusDropdown(e, gid, tid) {
-  e.stopPropagation();
-  if (openDropdown === tid) { closeDropdown(); return; }
-  openDropdown = tid;
-  portal.innerHTML = STATUSES.map(s => `
-    <button class="status-option" onclick="setStatus('${gid}','${tid}','${s.key}')">
-      <span class="dot" style="background:${s.color}"></span>${s.label}
-    </button>`).join('');
-  const r = e.currentTarget.getBoundingClientRect(), h = STATUSES.length * 36;
-  let top = r.bottom + 4, left = r.right - 148;
-  if (top + h > window.innerHeight - 8) top = r.top - h - 4;
-  if (left < 8) left = 8;
-  portal.style.top = top+'px'; portal.style.left = left+'px';
-  portal.classList.add('open');
-}
-
-function closeDropdown() {
-  portal.classList.remove('open'); portal.innerHTML = ''; openDropdown = null;
-}
-
-document.addEventListener('click', closeDropdown);
+function cancelEdit(gid,tid,cid) { save(); }
 
 // ── Attachments ───────────────────────────────────────
-function triggerAttach(gid, tid) {
-  pendingUpload = {gid, tid}; fileInput.value = ''; fileInput.click();
-}
+function triggerAttach(gid,tid) { pendingUpload={gid,tid}; fileInput.value=''; fileInput.click(); }
 
 async function handleFileUpload() {
   if (!pendingUpload) return;
-  const {gid, tid} = pendingUpload;
-  const t = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
+  const {gid,tid} = pendingUpload;
+  const t    = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
   const files = Array.from(fileInput.files);
   if (!files.length) return;
-
   toast(`⬆️ Uploading ${files.length} file${files.length>1?'s':''}…`);
   setSyncing();
-
   for (const file of files) {
     try {
-      // Read as base64 dataURL
-      const dataUrl = await readFileAsDataURL(file);
-      // Sanitise filename
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const dataUrl  = await readFileAsDataURL(file);
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
       const ghPath   = `${ATT_DIR}/${tid}_${uid()}_${safeName}`;
-
-      // Upload to GitHub
-      const downloadUrl = await uploadAttachmentToGitHub(ghPath, dataUrl);
-
-      t.attachments.push({
-        id:  uid(),
-        name: file.name,
-        type: file.type,
-        url:  downloadUrl,   // served directly from GitHub
-        path: ghPath,        // needed to delete later
-      });
-    } catch(e) {
-      toast('⚠️ Upload failed for ' + file.name + ': ' + e.message);
-    }
+      const dlUrl    = await uploadAttachmentToGitHub(ghPath, dataUrl);
+      if (!t.attachments) t.attachments = [];
+      t.attachments.push({ id:uid(), name:file.name, type:file.type, url:dlUrl, path:ghPath });
+    } catch(e) { toast('⚠️ Upload failed: ' + e.message); }
   }
-
-  save();
-  toast('✅ Uploaded successfully');
+  save(); toast('✅ Uploaded');
 }
 
 function readFileAsDataURL(file) {
-  return new Promise((res, rej) => {
+  return new Promise((res,rej) => {
     const r = new FileReader();
     r.onload  = ev => res(ev.target.result);
     r.onerror = () => rej(new Error('Read failed'));
@@ -1863,18 +1323,12 @@ function readFileAsDataURL(file) {
   });
 }
 
-async function deleteAttachment(gid, tid, aid) {
+function deleteAttachment(gid,tid,aid) {
   const t   = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
   const att = t.attachments.find(a=>a.id===aid);
-  if (!att) return;
-
   t.attachments = t.attachments.filter(a=>a.id!==aid);
   save();
-
-  // Delete from GitHub in background
-  if (att.path && shas[att.path]) {
-    deleteFileFromGitHub(att.path, shas[att.path]).catch(() => {});
-  }
+  if (att && att.path && shas[att.path]) deleteFileFromGitHub(att.path, shas[att.path]).catch(()=>{});
 }
 
 // ── Render ────────────────────────────────────────────
@@ -1885,41 +1339,35 @@ function render() {
 
   let tt=0, td=0;
   data.forEach(g => { tt+=g.tasks.length; td+=g.tasks.filter(t=>t.status==='done').length; });
-
-  stats.innerHTML = `<strong>${data.length}</strong> group${data.length!==1?'s':''} &nbsp;·&nbsp; <strong>${tt}</strong> task${tt!==1?'s':''} &nbsp;·&nbsp; <strong>${td}</strong> done`;
+  stats.innerHTML = `<strong>${data.length}</strong> group${data.length!==1?'s':''} &nbsp;·&nbsp; <strong>${tt}</strong> item${tt!==1?'s':''} &nbsp;·&nbsp; <strong>${td}</strong> done`;
   emptyState.style.display = data.length===0 ? 'block' : 'none';
 
   const chevD = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>`;
   const chevU = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>`;
 
   container.innerHTML = data.map(g => {
-    const isDoc  = g.category === 'document';
-    const dc     = isDoc ? 0 : g.tasks.filter(t=>t.status==='done').length;
-    const tot    = g.tasks.length;
-    const pct    = (!isDoc && tot > 0) ? Math.round(dc/tot*100) : 0;
-    const catLabel = isDoc ? '📁 Document' : '📋 Task';
-    const catClass = isDoc ? 'document' : 'task';
+    const isDoc = g.category === 'document';
+    const dc    = isDoc ? 0 : g.tasks.filter(t=>t.status==='done').length;
+    const tot   = g.tasks.length;
+    const pct   = (!isDoc && tot>0) ? Math.round(dc/tot*100) : 0;
 
     const tasksHtml = tot===0
       ? `<div class="empty-tasks">No items yet — add one below</div>`
       : g.tasks.map(t => {
-          const st   = STATUSES.find(s=>s.key===t.status) || STATUSES[0];
+          const st   = STATUSES.find(s=>s.key===t.status)||STATUSES[0];
           const atts = t.attachments || [];
 
-          // Task-level attachments (now only shown in comments, but kept for legacy)
-          const attachItems = atts.map(a => {
-            const isImg = a.type && a.type.startsWith('image/');
-            if (isImg) return `
-              <div class="attach-img"
-                data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
+          // Task-level attachments (legacy)
+          const attItems = atts.map(a => {
+            if (a.type && a.type.startsWith('image/')) return `
+              <div class="attach-img" data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
                 onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">
                 <img src="${esc(a.url)}" alt="${esc(a.name)}" loading="lazy">
                 <div class="img-overlay">🔍</div>
                 <button class="del-btn" onclick="event.stopPropagation();deleteAttachment('${g.id}','${t.id}','${a.id}')">✕</button>
               </div>`;
             return `
-              <div class="attach-file"
-                data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
+              <div class="attach-file" data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
                 onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">
                 <span class="file-icon">${fileIcon(a.type)}</span>
                 <span class="file-name">${esc(a.name)}</span>
@@ -1927,28 +1375,25 @@ function render() {
               </div>`;
           }).join('');
 
-          // Render comments with their attachments
-          const commentsHtml = (t.comments||[]).length === 0
+          // Comments
+          const commentsHtml = (t.comments||[]).length===0
             ? `<div class="no-comments">No comments yet</div>`
             : (t.comments||[]).map(c => {
                 const cAtts = (c.attachments||[]).map(a => {
-                  const isImg = a.type && a.type.startsWith('image/');
-                  if (isImg) return `
-                    <div class="attach-img" style="width:56px;height:56px"
+                  if (a.type && a.type.startsWith('image/')) return `
+                    <div class="attach-img" style="width:60px;height:60px"
                       data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
                       onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">
                       <img src="${esc(a.url)}" alt="${esc(a.name)}" loading="lazy">
                       <div class="img-overlay">🔍</div>
                     </div>`;
                   return `
-                    <div class="attach-file"
-                      data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
+                    <div class="attach-file" data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
                       onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">
                       <span class="file-icon">${fileIcon(a.type)}</span>
                       <span class="file-name">${esc(a.name)}</span>
                     </div>`;
                 }).join('');
-
                 return `
                 <div class="comment-item" id="ci-${c.id}">
                   <div class="comment-header">
@@ -1959,16 +1404,16 @@ function render() {
                     </div>
                   </div>
                   ${c.text ? `<div class="comment-body">${esc(c.text)}</div>` : ''}
-                  ${cAtts ? `<div class="attach-grid" style="margin-top:.35rem">${cAtts}</div>` : ''}
+                  ${cAtts ? `<div class="comment-atts">${cAtts}</div>` : ''}
                 </div>`;
               }).join('');
 
           return `
-          <div class="task-wrap ${(!isDoc && t.status==='done')?'done':''} ${t.expanded?'expanded':''}">
+          <div class="task-wrap ${(!isDoc&&t.status==='done')?'done':''} ${t.expanded?'expanded':''}">
             <div class="task">
               <button class="btn-icon neutral" onclick="toggleExpand('${g.id}','${t.id}')">${t.expanded?chevU:chevD}</button>
               <span class="task-name">${esc(t.name)}</span>
-              ${atts.length ? `<span class="attach-badge">📎 ${atts.length}</span>` : ''}
+              ${atts.length ? `<span style="font-size:.62rem;color:var(--muted)">📎${atts.length}</span>` : ''}
               ${!isDoc ? `
               <button class="status-btn" data-status="${t.status}" onclick="openStatusDropdown(event,'${g.id}','${t.id}')">
                 <span class="status-dot"></span>${st.label}
@@ -1977,15 +1422,13 @@ function render() {
             </div>
             <div class="task-detail">
               <div class="detail-section">
-                <div class="detail-label">💬 &nbsp;Comments</div>
+                <div class="detail-label">💬 Comments</div>
                 <div class="comments-list" id="cl-${t.id}">${commentsHtml}</div>
                 <div class="comment-input-wrap">
                   <textarea class="comment-textarea" id="ct-${t.id}" placeholder="Write a comment…" rows="2"></textarea>
                   <div id="cap-${t.id}" class="comment-att-preview"></div>
-                  <div class="comment-post-row" style="display:flex;justify-content:space-between;align-items:center">
-                    <button class="comment-att-attach-btn" onclick="triggerCommentAttach('${t.id}')">
-                      📎 Attach
-                    </button>
+                  <div class="comment-post-row">
+                    <button class="btn-attach-comment" onclick="triggerCommentAttach('${t.id}')">📎 Attach</button>
                     <button class="btn-post" onclick="postComment('${g.id}','${t.id}')">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                       Post
@@ -1995,30 +1438,29 @@ function render() {
               </div>
               ${atts.length ? `
               <div class="detail-section">
-                <div class="detail-label">📎 &nbsp;Legacy Attachments</div>
-                <div class="attach-grid">${attachItems}</div>
+                <div class="detail-label">📎 Attachments</div>
+                <div style="display:flex;flex-wrap:wrap;gap:.4rem">${attItems}</div>
               </div>` : ''}
             </div>
           </div>`;
         }).join('');
 
     return `
-    <div class="group ${g.open?'open':''}" id="group-${g.id}">
+    <div class="group ${g.open?'open':''} ${isDoc?'doc-group':''}" id="group-${g.id}">
       <div class="group-header" onclick="toggleGroup('${g.id}')">
         <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         <span class="group-name">${esc(g.name)}</span>
         <div class="group-meta">
-          <span class="cat-badge ${catClass}">${catLabel}</span>
           ${!isDoc ? `<span class="pill pill-done">${dc} done</span>` : ''}
           <span class="pill pill-total">${tot} total</span>
         </div>
-        <button class="btn-icon" onclick="event.stopPropagation();deleteGroup('${g.id}')" title="Delete group">✕</button>
+        <button class="btn-icon" onclick="event.stopPropagation();deleteGroup('${g.id}')" title="Delete">✕</button>
       </div>
       ${!isDoc ? `<div class="group-progress"><div class="group-progress-fill" style="width:${pct}%"></div></div>` : ''}
       <div class="group-body">
         <div class="tasks">${tasksHtml}</div>
         <div class="add-task-row">
-          <input type="text" id="task-input-${g.id}" placeholder="Add ${isDoc ? 'document' : 'task'}…" maxlength="120"
+          <input type="text" id="task-input-${g.id}" placeholder="Add ${isDoc?'document':'task'}…" maxlength="120"
             onkeydown="if(event.key==='Enter') addTask('${g.id}')">
           <button class="btn-sm" onclick="addTask('${g.id}')">Add</button>
         </div>
@@ -2027,12 +1469,7 @@ function render() {
   }).join('');
 }
 
-document.getElementById('newGroupInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') addGroup();
-});
-
-// ── Expose functions to global scope for onclick handlers ──
-// Required because 'use strict' prevents auto-global attachment
+// ── Expose to global ──────────────────────────────────
 window.pinPress           = pinPress;
 window.pinDelete          = pinDelete;
 window.selectUser         = selectUser;
@@ -2059,6 +1496,5 @@ window.closeViewer        = closeViewer;
 window.connect            = connect;
 window.signOut            = signOut;
 </script>
-
 </body>
 </html>
