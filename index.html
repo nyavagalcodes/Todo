@@ -784,7 +784,7 @@ function buildUserSelector() {
 
   if (users.length === 1) {
     selectedUser = users[0];
-    document.getElementById('pinLogoSub').textContent = `${selectedUser.username} · enter your PIN`;
+    document.getElementById('pinLogoSub').textContent = `Hi ${selectedUser.username} — enter your PIN`;
     return;
   }
   document.getElementById('userSelector').style.display = 'block';
@@ -807,7 +807,7 @@ function selectUser(index) {
   pinEntry = '';
   updatePinDots();
   clearPinError();
-  document.getElementById('pinLogoSub').textContent = `${selectedUser.username} · enter your PIN`;
+  document.getElementById('pinLogoSub').textContent = `Hi ${selectedUser.username} — enter your PIN`;
 }
 
 function pinPress(digit) {
@@ -1423,16 +1423,27 @@ function render() {
                 </div>`;
               }).join('');
 
-          return `
-          <div class="task-wrap ${(!isDoc&&t.status==='done')?'done':''} ${t.expanded?'expanded':''}">
+          return isDoc ? `
+          <div class="task-wrap" id="tw-${t.id}">
+            <div class="task">
+              <span class="task-name">${esc(t.name)}</span>
+              ${atts.length ? `<span style="font-size:.62rem;color:var(--muted)">📎 ${atts.length}</span>` : ''}
+              <button class="btn-icon neutral" onclick="triggerAttach('${g.id}','${t.id}')" title="Attach file" style="opacity:1;font-size:1rem">📎</button>
+              <button class="btn-icon" onclick="deleteTask('${g.id}','${t.id}')" title="Delete" style="opacity:1">✕</button>
+            </div>
+            ${atts.length ? `
+            <div style="display:flex;flex-wrap:wrap;gap:.4rem;padding:.5rem .75rem;background:var(--surface3);border-top:1px solid var(--border)">
+              ${attItems}
+            </div>` : ''}
+          </div>` : `
+          <div class="task-wrap ${t.status==='done'?'done':''} ${t.expanded?'expanded':''}">
             <div class="task">
               <button class="btn-icon neutral" onclick="toggleExpand('${g.id}','${t.id}')">${t.expanded?chevU:chevD}</button>
               <span class="task-name">${esc(t.name)}</span>
               ${atts.length ? `<span style="font-size:.62rem;color:var(--muted)">📎${atts.length}</span>` : ''}
-              ${!isDoc ? `
               <button class="status-btn" data-status="${t.status}" onclick="openStatusDropdown(event,'${g.id}','${t.id}')">
                 <span class="status-dot"></span>${st.label}
-              </button>` : ''}
+              </button>
               <button class="btn-icon" onclick="deleteTask('${g.id}','${t.id}')" title="Delete">✕</button>
             </div>
             <div class="task-detail">
