@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
- 
+
 :root {
   --bg: #080910;
   --surface: #11121a;
@@ -140,6 +140,25 @@ body {
 
 .pin-attempts {
   font-size: .62rem; color: var(--muted); text-align: center;
+}
+
+/* User selector button */
+.user-btn {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .55rem .85rem; border-radius: 9px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-family: 'DM Mono', monospace;
+  font-size: .78rem; cursor: pointer; transition: all .15s;
+  width: 100%; text-align: left;
+}
+.user-btn:hover  { border-color: var(--accent); background: var(--surface3); }
+.user-btn.active { border-color: var(--accent); background: var(--accent-glow); color: var(--accent2); }
+.user-btn .u-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem; font-weight: 700; flex-shrink: 0;
+  font-family: 'Syne', sans-serif;
 }
 
 /* Ambient background */
@@ -615,7 +634,13 @@ input[type="file"] { display:none; }
   <div class="pin-card">
     <div>
       <div class="pin-logo">Task<span style="font-weight:400;opacity:.45">Flow</span></div>
-      <div class="pin-logo-sub">enter your PIN to continue</div>
+      <div class="pin-logo-sub" id="pinLogoSub">enter your PIN to continue</div>
+    </div>
+
+    <!-- User selector (hidden when only 1 user) -->
+    <div id="userSelector" style="display:none;width:100%">
+      <div class="detail-label" style="margin-bottom:.4rem;font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Select user</div>
+      <div id="userList" style="display:flex;flex-direction:column;gap:.35rem;width:100%"></div>
     </div>
 
     <div class="pin-dots" id="pinDots">
@@ -649,7 +674,7 @@ input[type="file"] { display:none; }
 </div>
 
 <!-- Loading screen -->
-<div id="loadingScreen">
+<div id="loadingScreen" style="display:none">
   <div class="spinner"></div>
   <div class="loading-label">Connecting…</div>
 </div>
@@ -759,21 +784,64 @@ input[type="file"] { display:none; }
 'use strict';
 
 // ── PIN Auth ──────────────────────────────────────────
-// SHA-256 hash of your PIN. To change your PIN:
-// 1. Go to: https://emn178.github.io/online-tools/sha256.html
-// 2. Type your new PIN → copy the hash → replace the string below
-const PIN_HASH = '4994625184a72ac4993713609c93308a12166a2edd17eadecd355f545ece3ebc';
-const LS_AUTH  = 'tf_authed';
-const MAX_ATTEMPTS = 5;
-const LOCKOUT_MS   = 5 * 60 * 1000; // 5 minutes
+// PIN_HASH, MAX_ATTEMPTS and LOCKOUT_MINUTES are loaded
+// from config.js — edit that file to change your PIN.
+const LS_AUTH    = 'tf_authed';
+const LOCKOUT_MS = (APP_CONFIG.LOCKOUT_MINUTES || 5) * 60 * 1000;
 
-let pinEntry    = '';
-let pinFailed   = 0;
-let pinLocked   = false;
+let pinEntry      = '';
+let pinFailed     = 0;
+let pinLocked     = false;
+let selectedUser  = null; // currently selected user object
 
 async function sha256(str) {
-  const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// ── Build user selector on load ───────────────────────
+function buildUserSelector() {
+  const users = APP_CONFIG.users || [];
+
+  if (users.length === 1) {
+    // Only one user — auto-select, hide selector
+    selectedUser = users[0];
+    document.getElementById('pinLogoSub').textContent =
+      `Hello ${selectedUser.username} — enter your PIN`;
+    return;
+  }
+
+  // Multiple users — show selector
+  document.getElementById('userSelector').style.display = 'block';
+  document.getElementById('pinLogoSub').textContent = 'Select user and enter PIN';
+
+  const list = document.getElementById('userList');
+  list.innerHTML = users.map((u, i) => `
+    <button class="user-btn" id="ubtn-${i}" onclick="selectUser(${i})">
+      <div class="u-avatar">${u.username.charAt(0).toUpperCase()}</div>
+      ${u.username}
+    </button>`).join('');
+
+  // Auto-select first user
+  selectUser(0);
+}
+
+function selectUser(index) {
+  const users = APP_CONFIG.users || [];
+  selectedUser = users[index];
+
+  // Update active state
+  users.forEach((_, i) => {
+    const btn = document.getElementById('ubtn-' + i);
+    if (btn) btn.classList.toggle('active', i === index);
+  });
+
+  // Reset pin entry when switching users
+  pinEntry = '';
+  updatePinDots();
+  clearPinError();
+  document.getElementById('pinLogoSub').textContent =
+    `Hello ${selectedUser.username} — enter your PIN`;
 }
 
 function pinPress(digit) {
@@ -799,20 +867,18 @@ function updatePinDots() {
 }
 
 async function checkPin() {
+  if (!selectedUser) { pinEntry = ''; return; }
   const hash = await sha256(pinEntry);
-  if (hash === PIN_HASH) {
-    // Correct — unlock for this session
-    sessionStorage.setItem(LS_AUTH, '1');
+
+  if (hash === selectedUser.pinHash) {
+    sessionStorage.setItem(LS_AUTH, selectedUser.username);
     pinFailed = 0;
     document.getElementById('pinScreen').classList.add('hidden');
     bootApp();
   } else {
-    // Wrong PIN
     pinFailed++;
     pinEntry = '';
     showPinError(pinFailed);
-
-    // Shake dots red
     for (let i = 0; i < 6; i++) {
       const dot = document.getElementById('pd' + i);
       dot.classList.remove('filled');
@@ -822,20 +888,16 @@ async function checkPin() {
       for (let i = 0; i < 6; i++)
         document.getElementById('pd' + i).classList.remove('error');
     }, 400);
-
-    if (pinFailed >= MAX_ATTEMPTS) {
-      lockout();
-    }
+    if (pinFailed >= APP_CONFIG.MAX_ATTEMPTS) lockout();
   }
 }
 
 function showPinError(attempts) {
-  const remaining = MAX_ATTEMPTS - attempts;
+  const remaining = APP_CONFIG.MAX_ATTEMPTS - attempts;
   const msg = document.getElementById('pinErrorMsg');
-  if (remaining > 0) {
-    msg.textContent = `Incorrect PIN — ${remaining} attempt${remaining !== 1 ? 's' : ''} left`;
-  }
-  document.getElementById('pinAttempts').textContent = '';
+  msg.textContent = remaining > 0
+    ? `Incorrect PIN — ${remaining} attempt${remaining !== 1 ? 's' : ''} left`
+    : '';
 }
 
 function clearPinError() {
@@ -846,22 +908,16 @@ function lockout() {
   pinLocked = true;
   const until = Date.now() + LOCKOUT_MS;
   localStorage.setItem('tf_lockout', until);
-
   const msg = document.getElementById('pinErrorMsg');
-  msg.textContent = 'Too many attempts — locked for 5 minutes';
-
-  // Disable all pad buttons
+  msg.textContent = `Too many attempts — locked for ${APP_CONFIG.LOCKOUT_MINUTES} min`;
   document.querySelectorAll('.pin-btn').forEach(b => {
     b.style.opacity = '.3'; b.style.pointerEvents = 'none';
   });
-
-  // Countdown
   const interval = setInterval(() => {
     const remaining = Math.ceil((until - Date.now()) / 1000);
     if (remaining <= 0) {
       clearInterval(interval);
-      pinLocked = false;
-      pinFailed = 0;
+      pinLocked = false; pinFailed = 0;
       localStorage.removeItem('tf_lockout');
       msg.textContent = '';
       document.querySelectorAll('.pin-btn').forEach(b => {
@@ -875,28 +931,25 @@ function lockout() {
   }, 1000);
 }
 
-// Support keyboard input for PIN
 document.addEventListener('keydown', e => {
   if (document.getElementById('pinScreen').classList.contains('hidden')) return;
   if (e.key >= '0' && e.key <= '9') pinPress(e.key);
   if (e.key === 'Backspace') pinDelete();
 });
 
-// ── Boot: check session & lockout ─────────────────────
+// ── Init auth ─────────────────────────────────────────
 function initAuth() {
   // Check lockout
   const lockUntil = parseInt(localStorage.getItem('tf_lockout') || '0');
   if (lockUntil > Date.now()) {
     pinLocked = true;
-    // Resume countdown from saved lockout
-    const until = lockUntil;
+    const msg = document.getElementById('pinErrorMsg');
+    msg.textContent = 'Too many attempts — locked';
     document.querySelectorAll('.pin-btn').forEach(b => {
       b.style.opacity = '.3'; b.style.pointerEvents = 'none';
     });
-    const msg = document.getElementById('pinErrorMsg');
-    msg.textContent = 'Too many attempts — locked';
     const interval = setInterval(() => {
-      const remaining = Math.ceil((until - Date.now()) / 1000);
+      const remaining = Math.ceil((lockUntil - Date.now()) / 1000);
       if (remaining <= 0) {
         clearInterval(interval);
         pinLocked = false;
@@ -911,40 +964,25 @@ function initAuth() {
           `Try again in ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
       }
     }, 1000);
-    return;
   }
 
+  // Build user selector
+  buildUserSelector();
+
   // Check if already authed this session
-  if (sessionStorage.getItem(LS_AUTH) === '1') {
+  if (sessionStorage.getItem(LS_AUTH)) {
     document.getElementById('pinScreen').classList.add('hidden');
     bootApp();
     return;
   }
-
-  // Show PIN screen (already visible by default)
 }
 
-// rename old boot to bootApp
-async function bootApp() {
-  ghToken = localStorage.getItem(LS_TOKEN) || '';
-  ghUser  = localStorage.getItem(LS_USER)  || '';
-  ghRepo  = localStorage.getItem(LS_REPO)  || '';
-
-  try { shas = JSON.parse(localStorage.getItem(LS_SHAS) || '{}'); } catch { shas = {}; }
-  try { data = JSON.parse(localStorage.getItem(LS_DATA) || '[]'); } catch { data = []; }
-
-  if (ghToken && ghUser && ghRepo) {
-    const ok = await silentConnect();
-    if (ok) { showApp(); return; }
-  }
-
-  hideLoading();
-  showSetup();
-}
+// ── Config keys ───────────────────────────────────────
+const LS_TOKEN  = 'tf_gh_token';
 const LS_USER   = 'tf_gh_user';
 const LS_REPO   = 'tf_gh_repo';
 const LS_DATA   = 'tf_data_cache';
-const LS_SHAS   = 'tf_shas';       // file SHA cache for updates
+const LS_SHAS   = 'tf_shas';
 const DATA_PATH = 'taskflow-data.json';
 const ATT_DIR   = 'attachments';
 
@@ -960,26 +998,52 @@ let data          = [];
 let ghToken       = '';
 let ghUser        = '';
 let ghRepo        = '';
-let shas          = {};   // path → sha (needed for GitHub file updates)
+let shas          = {};
 let saveTimer     = null;
 let openDropdown  = null;
 let pendingUpload = null;
 
-const portal    = document.getElementById('statusPortal');
-const fileInput = document.getElementById('fileInput');
-
 // ── Boot ──────────────────────────────────────────────
-window.addEventListener('load', () => {
-  initAuth();
-});
+window.addEventListener('load', () => { initAuth(); });
+
+// rename old boot to bootApp
+async function bootApp() {
+  // DOM is ready here
+  window.portal    = document.getElementById('statusPortal');
+  window.fileInput = document.getElementById('fileInput');
+  fileInput.addEventListener('change', handleFileUpload);
+  ghToken = localStorage.getItem(LS_TOKEN) || '';
+  ghUser  = localStorage.getItem(LS_USER)  || '';
+  ghRepo  = localStorage.getItem(LS_REPO)  || '';
+
+  try { shas = JSON.parse(localStorage.getItem(LS_SHAS) || '{}'); } catch { shas = {}; }
+  try { data = JSON.parse(localStorage.getItem(LS_DATA) || '[]'); } catch { data = []; }
+
+  if (ghToken && ghUser && ghRepo) {
+    showLoading();
+    const ok = await silentConnect();
+    if (ok) { showApp(); return; }
+  }
+
+  hideLoading();
+  showSetup();
+}
+
 
 async function silentConnect() {
   try {
-    // Verify token works by fetching repo info
-    const res = await ghFetch(`https://api.github.com/repos/${ghUser}/${ghRepo}`);
+    // 8 second timeout so it never hangs forever
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+
+    const res = await ghFetch(
+      `https://api.github.com/repos/${ghUser}/${ghRepo}`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timer);
+
     if (!res.ok) return false;
 
-    // Load fresh data from GitHub (may differ from cache)
     await loadFromGitHub();
     return true;
   } catch {
@@ -1374,7 +1438,7 @@ function triggerAttach(gid, tid) {
   pendingUpload = {gid, tid}; fileInput.value = ''; fileInput.click();
 }
 
-fileInput.addEventListener('change', async () => {
+async function handleFileUpload() {
   if (!pendingUpload) return;
   const {gid, tid} = pendingUpload;
   const t = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
