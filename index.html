@@ -189,7 +189,7 @@ body::before {
 #appScreen.show { display: block; }
 
 /* Header */
-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 2rem; }
 
 .wordmark-sm { font-family: 'Syne', sans-serif; font-size: 1.7rem; font-weight: 800; letter-spacing: -.04em; }
 .wordmark-sm .w1 { color: #fff; }
@@ -202,7 +202,7 @@ header { display: flex; align-items: flex-start; justify-content: space-between;
 }
 
 .header-controls {
-  display: flex; align-items: center; gap: .5rem;
+  display: flex; align-items: center; gap: .5rem; white-space: nowrap;
 }
 .stats { font-size: .67rem; color: var(--muted); text-align: right; line-height: 1.9; }
 .stats strong { color: var(--accent2); }
@@ -249,16 +249,14 @@ header { display: flex; align-items: flex-start; justify-content: space-between;
 /* Groups */
 .groups { display: flex; flex-direction: column; gap: .75rem; }
 
-/* Task group = purple left accent */
+/* Task group = purple full border */
 .group {
-  background: var(--surface); border: 1px solid var(--border);
+  background: var(--surface); border: 1px solid rgba(111,94,249,.4);
   border-radius: 13px; animation: slideIn .2s ease;
-  border-left: 3px solid rgba(111,94,249,.5);
 }
-/* Document group = teal left accent */
+/* Document group = teal full border */
 .group.doc-group {
-  border-color: var(--border);
-  border-left: 3px solid rgba(34,211,238,.5);
+  border: 1px solid rgba(34,211,238,.4);
 }
 .group.doc-group .group-header:hover { background: rgba(34,211,238,.04); }
 
@@ -694,7 +692,7 @@ window.APP_CONFIG = {
   PIN_LENGTH: 5,
   users: [
     {
-      username: 'Admin',
+      username: 'Admin',   // ← This name shows on the PIN screen — change it to your name!
       pinHash: '92b4023c5fce4cce0b3781d8cc24350d640a51b797eef7b3140001d654238085',
     },
   ],
@@ -790,7 +788,7 @@ function buildUserSelector() {
 
   if (users.length === 1) {
     selectedUser = users[0];
-    document.getElementById('pinLogoSub').textContent = `Hello ${selectedUser.username} — enter your PIN`;
+    document.getElementById('pinLogoSub').textContent = `${selectedUser.username} · enter your PIN`;
     return;
   }
   document.getElementById('userSelector').style.display = 'block';
@@ -813,7 +811,7 @@ function selectUser(index) {
   pinEntry = '';
   updatePinDots();
   clearPinError();
-  document.getElementById('pinLogoSub').textContent = `Hello ${selectedUser.username} — enter your PIN`;
+  document.getElementById('pinLogoSub').textContent = `${selectedUser.username} · enter your PIN`;
 }
 
 function pinPress(digit) {
