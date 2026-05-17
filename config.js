@@ -32,10 +32,10 @@ window.APP_CONFIG = {
     },
 
     // Add more users like this:
-    // {
-    //   username: 'Alice',
-    //   pinHash:  'paste-sha256-hash-here',
-    // },
+     {
+       username: 'Namita',
+       pinHash:  '7b803083a1e457d1de7780d162b7527b68c3ef57a94c5af8fadff78416da5c25',
+     },
   ],
 
   // Max wrong attempts before lockout
