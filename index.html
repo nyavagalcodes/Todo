@@ -1098,29 +1098,32 @@ function toast(msg) {
 
 // ── Viewer ────────────────────────────────────────────
 function viewAttById(aid, name, type) {
-  const attObj  = atts[aid] || {};
-  const dataUrl = attObj.data || '';
-  if (!dataUrl) { toast('File not found - try re-uploading'); return; }
+  // Find data: check atts store, then scan all task attachments
+  let src = (atts[aid] || {}).data || '';
+  if (!src) {
+    for (const g of data) {
+      for (const t of (g.tasks || [])) {
+        for (const a of (t.attachments || [])) {
+          if (a.id === aid) { src = a.data || a.url || ''; break; }
+        }
+        for (const c of (t.comments || [])) {
+          for (const a of (c.attachments || [])) {
+            if (a.id === aid) { src = a.data || a.url || ''; break; }
+          }
+        }
+      }
+    }
+  }
+  if (!src) { toast('File not found'); return; }
 
-  // For images show inline viewer
   if (type && type.startsWith('image/')) {
-    openViewer(dataUrl, name, type);
+    // Show image inline
+    openViewer(src, name, type);
     return;
   }
 
-  // For all other files (PDF, doc, etc) — convert to blob and open new tab
-  // Must call window.open in same user gesture, no setTimeout
-  try {
-    const parts  = dataUrl.split(',');
-    const mime   = parts[0].match(/:(.*?);/)[1];
-    const binary = atob(parts[1]);
-    const bytes  = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    const blobUrl = URL.createObjectURL(new Blob([bytes], { type: mime }));
-    window.open(blobUrl, '_blank');
-  } catch(e) {
-    toast('Could not open file: ' + e.message);
-  }
+  // All other files — open directly in new tab
+  window.open(src, '_blank');
 }
 
 function openViewer(url, name, type) {
