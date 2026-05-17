@@ -64,8 +64,6 @@ body::before {
 .pin-logo {
   font-family: 'Syne', sans-serif; font-size: 1.7rem; font-weight: 800;
   letter-spacing: -.04em; text-align: center;
-  display: flex; align-items: baseline; gap: .3rem; justify-content: center;
-  flex-wrap: nowrap; white-space: nowrap;
 }
 .pin-logo .w1 { color: #fff; }
 .pin-logo .w2 { color: var(--accent2); font-weight: 400; }
@@ -189,44 +187,37 @@ body::before {
 #appScreen.show { display: block; }
 
 /* Header */
-header { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; margin-bottom: 2rem; }
+header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
 
-.wordmark-sm { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; letter-spacing: -.04em; white-space: nowrap; }
+.wordmark-sm { font-family: 'Syne', sans-serif; font-size: 1.7rem; font-weight: 800; letter-spacing: -.04em; }
 .wordmark-sm .w1 { color: #fff; }
 .wordmark-sm .w2 { color: var(--accent2); font-weight: 400; }
-.header-sub { font-size: .58rem; color: var(--muted); margin-top: .15rem; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.header-sub { font-size: .65rem; color: var(--muted); margin-top: .2rem; }
 
-.header-right {
-  display: flex; flex-direction: column; align-items: flex-end; gap: .4rem;
-  flex-shrink: 0;
-}
-
-.header-controls {
-  display: flex; align-items: center; gap: .3rem; white-space: nowrap;
-}
+.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: .45rem; }
+.stats { font-size: .67rem; color: var(--muted); text-align: right; line-height: 1.9; }
+.stats strong { color: var(--accent2); }
 
 .sync-pill {
-  display: flex; align-items: center; gap: .3rem; padding: .25rem .5rem;
+  display: flex; align-items: center; gap: .45rem; padding: .3rem .75rem;
   border-radius: 999px; border: 1px solid var(--border); background: var(--surface2);
-  font-size: .58rem; color: var(--muted); transition: border-color .2s; white-space: nowrap; flex-shrink: 0;
+  font-size: .65rem; color: var(--muted); transition: border-color .2s;
 }
 .sync-pill.ok     { border-color: rgba(52,211,153,.35); color: var(--text); }
 .sync-pill.saving { border-color: rgba(111,94,249,.4); }
 .sync-pill.error  { border-color: rgba(248,113,113,.35); color: #f87171; }
-.s-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background .2s; }
+.s-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background .2s; }
 .sync-pill.ok     .s-dot { background: var(--done); }
 .sync-pill.saving .s-dot { background: var(--accent); animation: blink .5s infinite; }
 .sync-pill.error  .s-dot { background: #f87171; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
 
 .btn-signout {
-  font-family: 'DM Mono', monospace; font-size: .58rem; padding: .18rem .4rem;
+  font-family: 'DM Mono', monospace; font-size: .62rem; padding: .2rem .55rem;
   border-radius: 5px; background: transparent; border: 1px solid var(--border);
-  color: var(--muted); cursor: pointer; transition: all .15s; white-space: nowrap; flex-shrink: 0;
+  color: var(--muted); cursor: pointer; transition: all .15s;
 }
 .btn-signout:hover { border-color: #f87171; color: #f87171; }
-
-.stats { font-size: .63rem; color: var(--muted); text-align: right; line-height: 1.9; }
-.stats strong { color: var(--accent2); }
 
 /* Add group bar — original style, two rows */
 .add-group-bar { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1.5rem; }
@@ -249,20 +240,13 @@ header { display: flex; align-items: flex-start; justify-content: space-between;
 /* Groups */
 .groups { display: flex; flex-direction: column; gap: .75rem; }
 
-/* Task group = thick purple left wall */
+/* Task group = default purple accent */
 .group {
-  background: var(--surface);
-  border: 1px solid rgba(111,94,249,.2);
-  border-left: 6px solid #6f5ef9;
-  border-radius: 13px;
-  animation: slideIn .2s ease;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 13px; animation: slideIn .2s ease;
 }
-/* Document group = thick teal left wall */
-.group.doc-group {
-  border: 1px solid rgba(34,211,238,.2);
-  border-left: 6px solid #22d3ee;
-}
-.group-header:hover { background: rgba(111,94,249,.04); }
+/* Document group = teal accent */
+.group.doc-group { border-color: rgba(34,211,238,.2); }
 .group.doc-group .group-header:hover { background: rgba(34,211,238,.04); }
 
 @keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
@@ -283,13 +267,6 @@ header { display: flex; align-items: flex-start; justify-content: space-between;
 .pill { padding: .12rem .5rem; border-radius: 999px; font-size: .62rem; }
 .pill-done  { background: rgba(52,211,153,.1); color: var(--done); }
 .pill-total { background: var(--surface3); color: var(--muted); }
-
-.cat-toggle-btn {
-  font-size: .75rem; padding: .1rem .3rem; border-radius: 5px;
-  background: none; border: 1px solid var(--border);
-  cursor: pointer; transition: all .15s; line-height: 1;
-}
-.cat-toggle-btn:hover { border-color: var(--accent2); transform: scale(1.1); }
 
 .btn-icon {
   width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
@@ -329,10 +306,8 @@ header { display: flex; align-items: flex-start; justify-content: space-between;
 .status-btn[data-status="done"]                  { background: rgba(52,211,153,.1);  color: var(--done); }
 .status-btn[data-status="done"]     .status-dot { background: var(--done); }
 
-.task .btn-icon { opacity: 0.45; }
+.task .btn-icon { opacity: 0; }
 .task:hover .btn-icon, .task-wrap.expanded .task .btn-icon { opacity: 1; }
-/* On touch devices always show buttons fully */
-@media (hover: none) { .task .btn-icon { opacity: 1; } }
 
 /* Status portal */
 #statusPortal {
@@ -397,12 +372,8 @@ header { display: flex; align-items: flex-start; justify-content: space-between;
 
 /* Comment input area */
 .comment-input-wrap { display: flex; flex-direction: column; gap: .4rem; }
-
-.comment-textarea-wrap { position: relative; }
-
 .comment-textarea {
   width: 100%; font-size: .76rem; line-height: 1.6; padding: .6rem .8rem;
-  padding-right: 2.4rem;
   background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
   color: var(--text); font-family: 'DM Mono', monospace; resize: vertical; min-height: 64px; outline: none;
   transition: border-color .2s;
@@ -410,19 +381,15 @@ header { display: flex; align-items: flex-start; justify-content: space-between;
 .comment-textarea:focus { border-color: var(--accent); }
 .comment-textarea::placeholder { color: var(--muted); }
 
-/* Attach icon sits inside the textarea top-right */
-.btn-attach-inside {
-  position: absolute; top: .45rem; right: .45rem;
-  width: 26px; height: 26px;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--surface3); border: 1px solid var(--border);
-  border-radius: 6px; cursor: pointer; font-size: .85rem;
-  transition: border-color .15s, background .15s;
-  line-height: 1;
-}
-.btn-attach-inside:hover { border-color: var(--accent2); background: var(--accent-glow); }
+.comment-post-row { display: flex; align-items: center; justify-content: space-between; }
 
-.comment-post-row { display: flex; align-items: center; justify-content: flex-end; }
+.btn-attach-comment {
+  display: flex; align-items: center; gap: .3rem; font-family: 'DM Mono', monospace;
+  font-size: .68rem; padding: .35rem .7rem; border-radius: 7px;
+  background: var(--surface3); border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer; transition: all .15s;
+}
+.btn-attach-comment:hover { border-color: var(--accent2); color: var(--accent2); }
 
 .btn-post {
   display: flex; align-items: center; gap: .4rem; font-family: 'DM Mono', monospace;
@@ -660,7 +627,7 @@ input[type="file"] { display: none; }
       <div class="header-sub" id="repoLabel"></div>
     </div>
     <div class="header-right">
-      <div class="header-controls">
+      <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;justify-content:flex-end">
         <div class="sync-pill" id="syncPill"><span class="s-dot"></span><span id="syncLabel">Connecting…</span></div>
         <button class="btn-signout" onclick="signOut()">disconnect</button>
       </div>
@@ -701,8 +668,19 @@ input[type="file"] { display: none; }
      CONFIG — edit this to change PIN
      Hash tool: https://emn178.github.io/online-tools/sha256.html
 ════════════════════════════════════════ -->
-<!-- Config loaded from config.js — edit that file to change PIN/username -->
-<script src="config.js"></script>
+<script>
+window.APP_CONFIG = {
+  PIN_LENGTH: 5,
+  users: [
+    {
+      username: 'Admin',
+      pinHash: '92b4023c5fce4cce0b3781d8cc24350d640a51b797eef7b3140001d654238085',
+    },
+  ],
+  MAX_ATTEMPTS:    5,
+  LOCKOUT_MINUTES: 5,
+};
+</script>
 
 <script>
 'use strict';
@@ -791,7 +769,7 @@ function buildUserSelector() {
 
   if (users.length === 1) {
     selectedUser = users[0];
-    document.getElementById('pinLogoSub').textContent = `Hi ${selectedUser.username} — enter your PIN`;
+    document.getElementById('pinLogoSub').textContent = `Hello ${selectedUser.username} — enter your PIN`;
     return;
   }
   document.getElementById('userSelector').style.display = 'block';
@@ -814,7 +792,7 @@ function selectUser(index) {
   pinEntry = '';
   updatePinDots();
   clearPinError();
-  document.getElementById('pinLogoSub').textContent = `Hi ${selectedUser.username} — enter your PIN`;
+  document.getElementById('pinLogoSub').textContent = `Hello ${selectedUser.username} — enter your PIN`;
 }
 
 function pinPress(digit) {
@@ -1155,68 +1133,39 @@ function toast(msg) {
 }
 
 // ── Viewer ────────────────────────────────────────────
-let _currentBlobUrl = null;
-
-async function openViewer(url, name, type, path) {
-  // Revoke previous blob URL immediately to free memory
-  if (_currentBlobUrl) { URL.revokeObjectURL(_currentBlobUrl); _currentBlobUrl = null; }
-
+function openViewer(url, name, type) {
   const inner = document.getElementById('viewerInner');
-  inner.innerHTML = `<div style="color:var(--muted);font-size:.8rem;padding:2rem">Loading…</div>`;
-  document.getElementById('viewerOverlay').classList.add('show');
-  document.body.style.overflow = 'hidden';
-
-  let blobUrl = null;
-
-  if (path && ghToken) {
-    try {
-      const res = await ghFetch(
-        `https://api.github.com/repos/${ghUser}/${ghRepo}/contents/${path}`,
-        { headers: { 'Accept': 'application/vnd.github.v3.raw' } }
-      );
-      if (res.ok) {
-        const blob = await res.blob();
-        blobUrl = URL.createObjectURL(blob);
-        _currentBlobUrl = blobUrl;
-      }
-    } catch(e) { console.warn('Fetch failed:', e); }
-  }
-
-  const src = blobUrl || url;
+  inner.innerHTML = '';
   let content = '';
   if (type && type.startsWith('image/')) {
-    content = `<img src="${src}" alt="${esc(name)}" style="max-width:88vw;max-height:82vh;border-radius:8px;object-fit:contain;box-shadow:0 0 60px rgba(0,0,0,.7)">`;
-  } else if (type === 'application/pdf') {
-    content = `<iframe src="${src}" style="width:85vw;height:82vh;border:none;border-radius:8px;background:#fff"></iframe>`;
-  } else if (type && (type.includes('word') || type.includes('sheet') || type.includes('excel'))) {
+    content = `<img src="${esc(url)}" alt="${esc(name)}">`;
+  } else if (type === 'application/pdf' || type && (type.includes('word') || type.includes('document') || type.includes('sheet') || type.includes('excel'))) {
     const vu = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
-    content  = `<iframe src="${esc(vu)}" style="width:85vw;height:82vh;border:none;border-radius:8px;background:#fff"></iframe>`;
+    content  = `<iframe src="${esc(vu)}"></iframe>`;
   } else if (type && type.startsWith('video/')) {
-    content = `<video src="${src}" controls style="max-width:88vw;max-height:82vh;border-radius:8px"></video>`;
+    content = `<video src="${esc(url)}" controls></video>`;
   } else if (type && type.startsWith('audio/')) {
-    content = `<audio src="${src}" controls style="width:320px;margin:2rem 0"></audio>`;
+    content = `<audio src="${esc(url)}" controls></audio>`;
   } else {
-    content = `<div class="no-preview"><div class="big-icon">${fileIcon(type)}</div><div class="np-name">${esc(name)}</div><div class="np-hint">No preview — use download button</div></div>`;
+    content = `<div class="no-preview"><div class="big-icon">${fileIcon(type)}</div><div class="np-name">${esc(name)}</div><div class="np-hint">No preview available</div></div>`;
   }
-
   inner.innerHTML = content + `
     <div class="viewer-toolbar">
       <span class="viewer-name">${esc(name)}</span>
-      <a href="${src}" download="${esc(name)}">
+      <a href="${esc(url)}" target="_blank" rel="noopener">
         <button class="btn-newtab">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Open in new tab
         </button>
       </a>
     </div>`;
+  document.getElementById('viewerOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
 }
-
 function closeViewer() {
   document.getElementById('viewerOverlay').classList.remove('show');
   document.getElementById('viewerInner').innerHTML = '';
   document.body.style.overflow = '';
-  // Revoke blob URL on close — frees memory immediately
-  if (_currentBlobUrl) { URL.revokeObjectURL(_currentBlobUrl); _currentBlobUrl = null; }
 }
 document.getElementById('viewerOverlay').addEventListener('click', e => { if (e.target === document.getElementById('viewerOverlay')) closeViewer(); });
 document.getElementById('viewerClose').addEventListener('click', closeViewer);
@@ -1252,22 +1201,13 @@ function selectCat(cat) {
 
 // ── Groups ────────────────────────────────────────────
 function addGroup() {
-  const inp  = document.getElementById('newGroupInput');
+  const inp = document.getElementById('newGroupInput');
   const name = inp.value.trim(); if (!name) return;
-  const isDocBtn = document.getElementById('catDoc');
-  const cat = (isDocBtn && (isDocBtn.classList.contains('active-doc'))) ? 'document' : 'task';
-  data.push({ id:uid(), name, category:cat, open:true, tasks:[] });
+  data.push({ id:uid(), name, category:selectedCat, open:true, tasks:[] });
   inp.value = ''; save();
 }
 function deleteGroup(gid) { if (!confirm('Delete this group?')) return; data = data.filter(g=>g.id!==gid); save(); }
 function toggleGroup(gid) { const g=data.find(g=>g.id===gid); if(g){g.open=!g.open;save();} }
-
-function toggleGroupCat(gid) {
-  const g = data.find(g=>g.id===gid);
-  if (!g) return;
-  g.category = g.category === 'document' ? 'task' : 'document';
-  save();
-}
 
 // ── Tasks ─────────────────────────────────────────────
 function addTask(gid) {
@@ -1353,21 +1293,6 @@ function cancelEdit(gid,tid,cid) { save(); }
 // ── Attachments ───────────────────────────────────────
 function triggerAttach(gid,tid) { pendingUpload={gid,tid}; fileInput.value=''; fileInput.click(); }
 
-function triggerAttachNew(gid) {
-  // Create the item first (using input name or a default), then attach
-  const inp  = document.getElementById('task-input-' + gid);
-  const name = inp.value.trim() || 'Document';
-  const g    = data.find(g=>g.id===gid);
-  const newTask = { id:uid(), name, status:'todo', expanded:false, attachments:[], comments:[] };
-  g.tasks.push(newTask);
-  inp.value = '';
-  save();
-  // Open attach for the new item
-  pendingUpload = { gid, tid: newTask.id };
-  fileInput.value = '';
-  fileInput.click();
-}
-
 async function handleFileUpload() {
   if (!pendingUpload) return;
   const {gid,tid} = pendingUpload;
@@ -1398,34 +1323,12 @@ function readFileAsDataURL(file) {
   });
 }
 
-async function deleteAttachment(gid,tid,aid) {
+function deleteAttachment(gid,tid,aid) {
   const t   = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
   const att = t.attachments.find(a=>a.id===aid);
-  if (!att) return;
-
-  // Remove from data and save immediately
   t.attachments = t.attachments.filter(a=>a.id!==aid);
   save();
-
-  if (!att.path) return;
-
-  try {
-    // Use cached SHA or fetch fresh from GitHub
-    let sha = shas[att.path];
-    if (!sha) {
-      const res = await ghFetch(`https://api.github.com/repos/${ghUser}/${ghRepo}/contents/${att.path}`);
-      if (res.ok) {
-        const json = await res.json();
-        sha = json.sha;
-      }
-    }
-    if (sha) {
-      await deleteFileFromGitHub(att.path, sha);
-      toast('🗑️ File deleted from repo');
-    }
-  } catch(e) {
-    console.warn('Could not delete file from GitHub:', e);
-  }
+  if (att && att.path && shas[att.path]) deleteFileFromGitHub(att.path, shas[att.path]).catch(()=>{});
 }
 
 // ── Render ────────────────────────────────────────────
@@ -1457,15 +1360,15 @@ function render() {
           // Task-level attachments (legacy)
           const attItems = atts.map(a => {
             if (a.type && a.type.startsWith('image/')) return `
-              <div class="attach-img" data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}" data-path="${esc(a.path||'')}"
-                onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type,this.dataset.path)">
+              <div class="attach-img" data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
+                onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">
                 <img src="${esc(a.url)}" alt="${esc(a.name)}" loading="lazy">
                 <div class="img-overlay">🔍</div>
                 <button class="del-btn" onclick="event.stopPropagation();deleteAttachment('${g.id}','${t.id}','${a.id}')">✕</button>
               </div>`;
             return `
-              <div class="attach-file" data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}" data-path="${esc(a.path||'')}"
-                onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type,this.dataset.path)">
+              <div class="attach-file" data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
+                onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">
                 <span class="file-icon">${fileIcon(a.type)}</span>
                 <span class="file-name">${esc(a.name)}</span>
                 <button class="del-btn" onclick="event.stopPropagation();deleteAttachment('${g.id}','${t.id}','${a.id}')">✕</button>
@@ -1479,14 +1382,14 @@ function render() {
                 const cAtts = (c.attachments||[]).map(a => {
                   if (a.type && a.type.startsWith('image/')) return `
                     <div class="attach-img" style="width:60px;height:60px"
-                      data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}" data-path="${esc(a.path||'')}"
-                      onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type,this.dataset.path)">
+                      data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
+                      onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">
                       <img src="${esc(a.url)}" alt="${esc(a.name)}" loading="lazy">
                       <div class="img-overlay">🔍</div>
                     </div>`;
                   return `
-                    <div class="attach-file" data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}" data-path="${esc(a.path||'')}"
-                      onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type,this.dataset.path)">
+                    <div class="attach-file" data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
+                      onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">
                       <span class="file-icon">${fileIcon(a.type)}</span>
                       <span class="file-name">${esc(a.name)}</span>
                     </div>`;
@@ -1505,27 +1408,16 @@ function render() {
                 </div>`;
               }).join('');
 
-          return isDoc ? `
-          <div class="task-wrap" id="tw-${t.id}">
-            <div class="task">
-              <span class="task-name">${esc(t.name)}</span>
-              ${atts.length ? `<span style="font-size:.62rem;color:var(--muted)">📎 ${atts.length}</span>` : ''}
-              <button class="btn-icon neutral" onclick="triggerAttach('${g.id}','${t.id}')" title="Attach file" style="opacity:1;font-size:1rem">📎</button>
-              <button class="btn-icon" onclick="deleteTask('${g.id}','${t.id}')" title="Delete" style="opacity:1">✕</button>
-            </div>
-            ${atts.length ? `
-            <div style="display:flex;flex-wrap:wrap;gap:.4rem;padding:.5rem .75rem;background:var(--surface3);border-top:1px solid var(--border)">
-              ${attItems}
-            </div>` : ''}
-          </div>` : `
-          <div class="task-wrap ${t.status==='done'?'done':''} ${t.expanded?'expanded':''}">
+          return `
+          <div class="task-wrap ${(!isDoc&&t.status==='done')?'done':''} ${t.expanded?'expanded':''}">
             <div class="task">
               <button class="btn-icon neutral" onclick="toggleExpand('${g.id}','${t.id}')">${t.expanded?chevU:chevD}</button>
               <span class="task-name">${esc(t.name)}</span>
               ${atts.length ? `<span style="font-size:.62rem;color:var(--muted)">📎${atts.length}</span>` : ''}
+              ${!isDoc ? `
               <button class="status-btn" data-status="${t.status}" onclick="openStatusDropdown(event,'${g.id}','${t.id}')">
                 <span class="status-dot"></span>${st.label}
-              </button>
+              </button>` : ''}
               <button class="btn-icon" onclick="deleteTask('${g.id}','${t.id}')" title="Delete">✕</button>
             </div>
             <div class="task-detail">
@@ -1533,12 +1425,10 @@ function render() {
                 <div class="detail-label">💬 Comments</div>
                 <div class="comments-list" id="cl-${t.id}">${commentsHtml}</div>
                 <div class="comment-input-wrap">
-                  <div class="comment-textarea-wrap">
-                    <textarea class="comment-textarea" id="ct-${t.id}" placeholder="Write a comment…" rows="2"></textarea>
-                    <button class="btn-attach-inside" onclick="triggerCommentAttach('${t.id}')" title="Attach file">📎</button>
-                  </div>
+                  <textarea class="comment-textarea" id="ct-${t.id}" placeholder="Write a comment…" rows="2"></textarea>
                   <div id="cap-${t.id}" class="comment-att-preview"></div>
                   <div class="comment-post-row">
+                    <button class="btn-attach-comment" onclick="triggerCommentAttach('${t.id}')">📎 Attach</button>
                     <button class="btn-post" onclick="postComment('${g.id}','${t.id}')">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                       Post
@@ -1570,9 +1460,8 @@ function render() {
       <div class="group-body">
         <div class="tasks">${tasksHtml}</div>
         <div class="add-task-row">
-          <input type="text" id="task-input-${g.id}" placeholder="Add ${isDoc?'document name':'task'}…" maxlength="120"
+          <input type="text" id="task-input-${g.id}" placeholder="Add ${isDoc?'document':'task'}…" maxlength="120"
             onkeydown="if(event.key==='Enter') addTask('${g.id}')">
-          ${isDoc ? `<button class="btn-icon neutral" style="opacity:1;font-size:1rem;width:36px;height:36px;flex-shrink:0" onclick="triggerAttachNew('${g.id}')" title="Attach file">📎</button>` : ''}
           <button class="btn-sm" onclick="addTask('${g.id}')">Add</button>
         </div>
       </div>
@@ -1588,7 +1477,6 @@ window.selectCat          = selectCat;
 window.addGroup           = addGroup;
 window.deleteGroup        = deleteGroup;
 window.toggleGroup        = toggleGroup;
-window.toggleGroupCat     = toggleGroupCat;
 window.addTask            = addTask;
 window.deleteTask         = deleteTask;
 window.toggleExpand       = toggleExpand;
@@ -1602,7 +1490,6 @@ window.removeCommentAtt   = removeCommentAtt;
 window.setStatus          = setStatus;
 window.openStatusDropdown = openStatusDropdown;
 window.triggerAttach      = triggerAttach;
-window.triggerAttachNew   = triggerAttachNew;
 window.deleteAttachment   = deleteAttachment;
 window.openViewer         = openViewer;
 window.closeViewer        = closeViewer;
