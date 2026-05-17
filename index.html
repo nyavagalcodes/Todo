@@ -1098,21 +1098,35 @@ function toast(msg) {
 
 // ── Viewer ────────────────────────────────────────────
 function viewAttById(aid, name, type) {
-  // Look up base64 data from atts store
   const attObj  = atts[aid] || {};
   const dataUrl = attObj.data || '';
-  if (!dataUrl) {
-    toast('File not found — try re-uploading');
+  if (!dataUrl) { toast('File not found - try re-uploading'); return; }
+
+  // For images show inline viewer
+  if (type && type.startsWith('image/')) {
+    openViewer(dataUrl, name, type);
     return;
   }
-  openViewer(dataUrl, name, type);
+
+  // For all other files (PDF, doc, etc) — convert to blob and open new tab
+  // Must call window.open in same user gesture, no setTimeout
+  try {
+    const parts  = dataUrl.split(',');
+    const mime   = parts[0].match(/:(.*?);/)[1];
+    const binary = atob(parts[1]);
+    const bytes  = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const blobUrl = URL.createObjectURL(new Blob([bytes], { type: mime }));
+    window.open(blobUrl, '_blank');
+  } catch(e) {
+    toast('Could not open file: ' + e.message);
+  }
 }
 
 function openViewer(url, name, type) {
   const inner = document.getElementById('viewerInner');
   inner.innerHTML = '';
 
-  // Convert base64 dataURL to blob URL for proper mobile rendering
   let displayUrl = url;
   if (url && url.startsWith('data:')) {
     try {
@@ -1125,33 +1139,8 @@ function openViewer(url, name, type) {
     } catch(e) { displayUrl = url; }
   }
 
-  let content = '';
-  if (type && type.startsWith('image/')) {
-    content = '<img src="' + displayUrl + '" alt="' + esc(name) + '">';
-  } else if (type && type.startsWith('video/')) {
-    content = '<video src="' + displayUrl + '" controls></video>';
-  } else if (type && type.startsWith('audio/')) {
-    content = '<audio src="' + displayUrl + '" controls></audio>';
-  } else {
-    // Open in new tab — Chrome mobile can render PDFs from blob URLs in new tab
-    content = '<div class="no-preview">' +
-      '<div class="big-icon">' + fileIcon(type) + '</div>' +
-      '<div class="np-name">' + esc(name) + '</div>' +
-      '<div class="np-hint">Opening in new tab...</div>' +
-      '</div>';
-    setTimeout(() => {
-      const newTab = window.open(displayUrl, '_blank');
-      if (!newTab) {
-        // Popup blocked — fallback to download
-        const a = document.createElement('a');
-        a.href = displayUrl;
-        a.download = name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }
-    }, 300);
-  }
+  // Only images shown inline, everything else handled by viewAttById
+  const content = '<img src="' + displayUrl + '" alt="' + esc(name) + '">';
 
   inner.innerHTML = content +
     '<div class="viewer-toolbar"><span class="viewer-name">' + esc(name) + '</span>' +
