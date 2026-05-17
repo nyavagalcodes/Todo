@@ -1155,39 +1155,68 @@ function toast(msg) {
 }
 
 // ── Viewer ────────────────────────────────────────────
-function openViewer(url, name, type) {
+let _currentBlobUrl = null;
+
+async function openViewer(url, name, type, path) {
+  // Revoke previous blob URL immediately to free memory
+  if (_currentBlobUrl) { URL.revokeObjectURL(_currentBlobUrl); _currentBlobUrl = null; }
+
   const inner = document.getElementById('viewerInner');
-  inner.innerHTML = '';
+  inner.innerHTML = `<div style="color:var(--muted);font-size:.8rem;padding:2rem">Loading…</div>`;
+  document.getElementById('viewerOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+
+  let blobUrl = null;
+
+  if (path && ghToken) {
+    try {
+      const res = await ghFetch(
+        `https://api.github.com/repos/${ghUser}/${ghRepo}/contents/${path}`,
+        { headers: { 'Accept': 'application/vnd.github.v3.raw' } }
+      );
+      if (res.ok) {
+        const blob = await res.blob();
+        blobUrl = URL.createObjectURL(blob);
+        _currentBlobUrl = blobUrl;
+      }
+    } catch(e) { console.warn('Fetch failed:', e); }
+  }
+
+  const src = blobUrl || url;
   let content = '';
   if (type && type.startsWith('image/')) {
-    content = `<img src="${esc(url)}" alt="${esc(name)}">`;
-  } else if (type === 'application/pdf' || type && (type.includes('word') || type.includes('document') || type.includes('sheet') || type.includes('excel'))) {
+    content = `<img src="${src}" alt="${esc(name)}" style="max-width:88vw;max-height:82vh;border-radius:8px;object-fit:contain;box-shadow:0 0 60px rgba(0,0,0,.7)">`;
+  } else if (type === 'application/pdf') {
+    content = `<iframe src="${src}" style="width:85vw;height:82vh;border:none;border-radius:8px;background:#fff"></iframe>`;
+  } else if (type && (type.includes('word') || type.includes('sheet') || type.includes('excel'))) {
     const vu = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
-    content  = `<iframe src="${esc(vu)}"></iframe>`;
+    content  = `<iframe src="${esc(vu)}" style="width:85vw;height:82vh;border:none;border-radius:8px;background:#fff"></iframe>`;
   } else if (type && type.startsWith('video/')) {
-    content = `<video src="${esc(url)}" controls></video>`;
+    content = `<video src="${src}" controls style="max-width:88vw;max-height:82vh;border-radius:8px"></video>`;
   } else if (type && type.startsWith('audio/')) {
-    content = `<audio src="${esc(url)}" controls></audio>`;
+    content = `<audio src="${src}" controls style="width:320px;margin:2rem 0"></audio>`;
   } else {
-    content = `<div class="no-preview"><div class="big-icon">${fileIcon(type)}</div><div class="np-name">${esc(name)}</div><div class="np-hint">No preview available</div></div>`;
+    content = `<div class="no-preview"><div class="big-icon">${fileIcon(type)}</div><div class="np-name">${esc(name)}</div><div class="np-hint">No preview — use download button</div></div>`;
   }
+
   inner.innerHTML = content + `
     <div class="viewer-toolbar">
       <span class="viewer-name">${esc(name)}</span>
-      <a href="${esc(url)}" target="_blank" rel="noopener">
+      <a href="${src}" download="${esc(name)}">
         <button class="btn-newtab">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          Open in new tab
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download
         </button>
       </a>
     </div>`;
-  document.getElementById('viewerOverlay').classList.add('show');
-  document.body.style.overflow = 'hidden';
 }
+
 function closeViewer() {
   document.getElementById('viewerOverlay').classList.remove('show');
   document.getElementById('viewerInner').innerHTML = '';
   document.body.style.overflow = '';
+  // Revoke blob URL on close — frees memory immediately
+  if (_currentBlobUrl) { URL.revokeObjectURL(_currentBlobUrl); _currentBlobUrl = null; }
 }
 document.getElementById('viewerOverlay').addEventListener('click', e => { if (e.target === document.getElementById('viewerOverlay')) closeViewer(); });
 document.getElementById('viewerClose').addEventListener('click', closeViewer);
@@ -1369,12 +1398,34 @@ function readFileAsDataURL(file) {
   });
 }
 
-function deleteAttachment(gid,tid,aid) {
+async function deleteAttachment(gid,tid,aid) {
   const t   = data.find(g=>g.id===gid).tasks.find(t=>t.id===tid);
   const att = t.attachments.find(a=>a.id===aid);
+  if (!att) return;
+
+  // Remove from data and save immediately
   t.attachments = t.attachments.filter(a=>a.id!==aid);
   save();
-  if (att && att.path && shas[att.path]) deleteFileFromGitHub(att.path, shas[att.path]).catch(()=>{});
+
+  if (!att.path) return;
+
+  try {
+    // Use cached SHA or fetch fresh from GitHub
+    let sha = shas[att.path];
+    if (!sha) {
+      const res = await ghFetch(`https://api.github.com/repos/${ghUser}/${ghRepo}/contents/${att.path}`);
+      if (res.ok) {
+        const json = await res.json();
+        sha = json.sha;
+      }
+    }
+    if (sha) {
+      await deleteFileFromGitHub(att.path, sha);
+      toast('🗑️ File deleted from repo');
+    }
+  } catch(e) {
+    console.warn('Could not delete file from GitHub:', e);
+  }
 }
 
 // ── Render ────────────────────────────────────────────
@@ -1406,15 +1457,15 @@ function render() {
           // Task-level attachments (legacy)
           const attItems = atts.map(a => {
             if (a.type && a.type.startsWith('image/')) return `
-              <div class="attach-img" data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
-                onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">
+              <div class="attach-img" data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}" data-path="${esc(a.path||'')}"
+                onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type,this.dataset.path)">
                 <img src="${esc(a.url)}" alt="${esc(a.name)}" loading="lazy">
                 <div class="img-overlay">🔍</div>
                 <button class="del-btn" onclick="event.stopPropagation();deleteAttachment('${g.id}','${t.id}','${a.id}')">✕</button>
               </div>`;
             return `
-              <div class="attach-file" data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
-                onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">
+              <div class="attach-file" data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}" data-path="${esc(a.path||'')}"
+                onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type,this.dataset.path)">
                 <span class="file-icon">${fileIcon(a.type)}</span>
                 <span class="file-name">${esc(a.name)}</span>
                 <button class="del-btn" onclick="event.stopPropagation();deleteAttachment('${g.id}','${t.id}','${a.id}')">✕</button>
@@ -1428,14 +1479,14 @@ function render() {
                 const cAtts = (c.attachments||[]).map(a => {
                   if (a.type && a.type.startsWith('image/')) return `
                     <div class="attach-img" style="width:60px;height:60px"
-                      data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
-                      onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">
+                      data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}" data-path="${esc(a.path||'')}"
+                      onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type,this.dataset.path)">
                       <img src="${esc(a.url)}" alt="${esc(a.name)}" loading="lazy">
                       <div class="img-overlay">🔍</div>
                     </div>`;
                   return `
-                    <div class="attach-file" data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}"
-                      onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">
+                    <div class="attach-file" data-url="${esc(a.url)}" data-name="${esc(a.name)}" data-type="${esc(a.type)}" data-path="${esc(a.path||'')}"
+                      onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type,this.dataset.path)">
                       <span class="file-icon">${fileIcon(a.type)}</span>
                       <span class="file-name">${esc(a.name)}</span>
                     </div>`;
