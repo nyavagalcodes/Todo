@@ -1099,55 +1099,30 @@ function toast(msg) {
 function openViewer(url, name, type) {
   const inner = document.getElementById('viewerInner');
   inner.innerHTML = '';
-
-  // Convert base64 dataURL to blob URL for proper rendering
-  let displayUrl = url;
-  if (url && url.startsWith('data:')) {
-    try {
-      const parts  = url.split(',');
-      const mime   = parts[0].match(/:(.*?);/)[1];
-      const binary = atob(parts[1]);
-      const bytes  = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const blob   = new Blob([bytes], { type: mime });
-      displayUrl   = URL.createObjectURL(blob);
-    } catch(e) { displayUrl = url; }
-  }
-
   let content = '';
   if (type && type.startsWith('image/')) {
-    content = '<img src="' + displayUrl + '" alt="' + esc(name) + '">';
+    content = '<img src="' + url + '" alt="' + esc(name) + '">';
   } else if (type === 'application/pdf') {
-    content = '<iframe src="' + displayUrl + '"></iframe>';
+    content = '<iframe src="' + url + '"></iframe>';
   } else if (type && (type.includes('word') || type.includes('sheet') || type.includes('excel'))) {
-    content = '<iframe src="https://docs.google.com/viewer?url=' + encodeURIComponent(displayUrl) + '&embedded=true"></iframe>';
+    content = '<iframe src="https://docs.google.com/viewer?url=' + encodeURIComponent(url) + '&embedded=true"></iframe>';
   } else if (type && type.startsWith('video/')) {
-    content = '<video src="' + displayUrl + '" controls></video>';
+    content = '<video src="' + url + '" controls></video>';
   } else if (type && type.startsWith('audio/')) {
-    content = '<audio src="' + displayUrl + '" controls></audio>';
+    content = '<audio src="' + url + '" controls></audio>';
   } else {
     content = '<div class="no-preview"><div class="big-icon">' + fileIcon(type) + '</div><div class="np-name">' + esc(name) + '</div><div class="np-hint">No preview available</div></div>';
   }
-
   inner.innerHTML = content +
     '<div class="viewer-toolbar"><span class="viewer-name">' + esc(name) + '</span>' +
-    '<a href="' + displayUrl + '" download="' + esc(name) + '">' +
+    '<a href="' + url + '" download="' + esc(name) + '" target="_blank">' +
     '<button class="btn-newtab">Open / Download</button></a></div>';
-
   document.getElementById('viewerOverlay').classList.add('show');
   document.body.style.overflow = 'hidden';
 }
 function closeViewer() {
-  // Revoke any blob URLs to free memory
-  const inner = document.getElementById('viewerInner');
-  inner.querySelectorAll('img,video,audio,iframe').forEach(el => {
-    const src = el.src || '';
-    if (src.startsWith('blob:')) URL.revokeObjectURL(src);
-  });
-  const link = inner.querySelector('a');
-  if (link && link.href.startsWith('blob:')) URL.revokeObjectURL(link.href);
-  inner.innerHTML = '';
   document.getElementById('viewerOverlay').classList.remove('show');
+  document.getElementById('viewerInner').innerHTML = '';
   document.body.style.overflow = '';
 }
 document.getElementById('viewerOverlay').addEventListener('click', e => { if (e.target === document.getElementById('viewerOverlay')) closeViewer(); });
