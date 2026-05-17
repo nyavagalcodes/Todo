@@ -1096,79 +1096,33 @@ function toast(msg) {
 }
 
 // ── Viewer ────────────────────────────────────────────
-// Look up attachment by ID and open viewer — avoids huge base64 in data attributes
-function viewAttById(aid, name, type) {
-  const attObj = atts[aid];
-  if (!attObj && !aid) { toast('Attachment not found'); return; }
-  const data = attObj ? attObj.data : '';
-  if (!data) { toast('Attachment data missing - try re-uploading'); return; }
-  openViewer(data, name, type);
-}
-
 function openViewer(url, name, type) {
   const inner = document.getElementById('viewerInner');
   inner.innerHTML = '';
-
-  // Convert base64 dataURL to blob URL for proper mobile rendering
-  let displayUrl = url;
-  if (url && url.startsWith('data:')) {
-    try {
-      const parts  = url.split(',');
-      const mime   = parts[0].match(/:(.*?);/)[1];
-      const binary = atob(parts[1]);
-      const bytes  = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      displayUrl = URL.createObjectURL(new Blob([bytes], { type: mime }));
-    } catch(e) { displayUrl = url; }
-  }
-
   let content = '';
   if (type && type.startsWith('image/')) {
-    content = '<img src="' + displayUrl + '" alt="' + esc(name) + '">';
+    content = '<img src="' + url + '" alt="' + esc(name) + '">';
+  } else if (type === 'application/pdf') {
+    content = '<iframe src="' + url + '"></iframe>';
+  } else if (type && (type.includes('word') || type.includes('sheet') || type.includes('excel'))) {
+    content = '<iframe src="https://docs.google.com/viewer?url=' + encodeURIComponent(url) + '&embedded=true"></iframe>';
   } else if (type && type.startsWith('video/')) {
-    content = '<video src="' + displayUrl + '" controls></video>';
+    content = '<video src="' + url + '" controls></video>';
   } else if (type && type.startsWith('audio/')) {
-    content = '<audio src="' + displayUrl + '" controls></audio>';
+    content = '<audio src="' + url + '" controls></audio>';
   } else {
-    // Open in new tab — Chrome mobile can render PDFs from blob URLs in new tab
-    content = '<div class="no-preview">' +
-      '<div class="big-icon">' + fileIcon(type) + '</div>' +
-      '<div class="np-name">' + esc(name) + '</div>' +
-      '<div class="np-hint">Opening in new tab...</div>' +
-      '</div>';
-    setTimeout(() => {
-      const newTab = window.open(displayUrl, '_blank');
-      if (!newTab) {
-        // Popup blocked — fallback to download
-        const a = document.createElement('a');
-        a.href = displayUrl;
-        a.download = name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }
-    }, 300);
+    content = '<div class="no-preview"><div class="big-icon">' + fileIcon(type) + '</div><div class="np-name">' + esc(name) + '</div><div class="np-hint">No preview available</div></div>';
   }
-
   inner.innerHTML = content +
     '<div class="viewer-toolbar"><span class="viewer-name">' + esc(name) + '</span>' +
-    '<a href="' + displayUrl + '" download="' + esc(name) + '">' +
-    '<button class="btn-newtab">Download</button></a></div>';
-
+    '<a href="' + url + '" download="' + esc(name) + '" target="_blank">' +
+    '<button class="btn-newtab">Open / Download</button></a></div>';
   document.getElementById('viewerOverlay').classList.add('show');
   document.body.style.overflow = 'hidden';
 }
 function closeViewer() {
-  // Revoke any blob URLs to free memory
-  const inner = document.getElementById('viewerInner');
-  inner.querySelectorAll('img,video,audio,iframe').forEach(el => {
-    const src = el.src || '';
-    if (src.startsWith('blob:')) URL.revokeObjectURL(src);
-  });
-  const link = inner.querySelector('a');
-  if (link && link.href.startsWith('blob:')) URL.revokeObjectURL(link.href);
-  inner.innerHTML = '';
   document.getElementById('viewerOverlay').classList.remove('show');
+  document.getElementById('viewerInner').innerHTML = '';
   document.body.style.overflow = '';
 }
 document.getElementById('viewerOverlay').addEventListener('click', e => { if (e.target === document.getElementById('viewerOverlay')) closeViewer(); });
@@ -1368,16 +1322,16 @@ function render() {
           const st       = STATUSES.find(s=>s.key===t.status)||STATUSES[0];
           const taskAtts = t.attachments || [];
 
-          // Build attachment display items — store only ID, look up data at click time
+          // Build attachment display items
           const attItems = taskAtts.map(a => {
             const src = esc(getAttData(a));
             if (a.type && a.type.startsWith('image/')) {
-              return '<div class="attach-img" onclick="viewAttById(\'' + a.id + '\',\'' + esc(a.name) + '\',\'' + esc(a.type) + '\')">' +
+              return '<div class="attach-img" data-url="' + src + '" data-name="' + esc(a.name) + '" data-type="' + esc(a.type) + '" onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">' +
                 '<img src="' + src + '" alt="' + esc(a.name) + '" loading="lazy">' +
                 '<div class="img-overlay">🔍</div>' +
                 '<button class="del-btn" onclick="event.stopPropagation();deleteAttachment(\'' + g.id + '\',\'' + t.id + '\',\'' + a.id + '\')">x</button></div>';
             }
-            return '<div class="attach-file" onclick="viewAttById(\'' + a.id + '\',\'' + esc(a.name) + '\',\'' + esc(a.type) + '\')">' +
+            return '<div class="attach-file" data-url="' + src + '" data-name="' + esc(a.name) + '" data-type="' + esc(a.type) + '" onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">' +
               '<span class="file-icon">' + fileIcon(a.type) + '</span>' +
               '<span class="file-name">' + esc(a.name) + '</span>' +
               '<button class="del-btn" onclick="event.stopPropagation();deleteAttachment(\'' + g.id + '\',\'' + t.id + '\',\'' + a.id + '\')">x</button></div>';
@@ -1403,11 +1357,11 @@ function render() {
                 const cAtts = (c.attachments||[]).map(a => {
                   const src = esc(getAttData(a));
                   if (a.type && a.type.startsWith('image/')) {
-                    return '<div class="attach-img" style="width:60px;height:60px" onclick="viewAttById(\'' + a.id + '\',\'' + esc(a.name) + '\',\'' + esc(a.type) + '\')">' +
+                    return '<div class="attach-img" style="width:60px;height:60px" data-url="' + src + '" data-name="' + esc(a.name) + '" data-type="' + esc(a.type) + '" onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">' +
                       '<img src="' + src + '" alt="' + esc(a.name) + '" loading="lazy">' +
                       '<div class="img-overlay">🔍</div></div>';
                   }
-                  return '<div class="attach-file" onclick="viewAttById(\'' + a.id + '\',\'' + esc(a.name) + '\',\'' + esc(a.type) + '\')">' +
+                  return '<div class="attach-file" data-url="' + src + '" data-name="' + esc(a.name) + '" data-type="' + esc(a.type) + '" onclick="openViewer(this.dataset.url,this.dataset.name,this.dataset.type)">' +
                     '<span class="file-icon">' + fileIcon(a.type) + '</span>' +
                     '<span class="file-name">' + esc(a.name) + '</span></div>';
                 }).join('');
@@ -1495,7 +1449,6 @@ window.triggerAttach        = triggerAttach;
 window.triggerAttachNew     = triggerAttachNew;
 window.deleteAttachment     = deleteAttachment;
 window.openViewer           = openViewer;
-window.viewAttById          = viewAttById;
 window.closeViewer          = closeViewer;
 window.connect              = connect;
 window.signOut              = signOut;
